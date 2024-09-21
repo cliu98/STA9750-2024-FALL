@@ -8,8 +8,13 @@ website:
     Course Projects for STA 9750 at Baruch College
   site-url: "https://cliu98.github.io/STA9750-2024-FALL/"
   navbar:
+    - title: Home
+    href: index.qmd
+    - title: About
+    href: mp01.qmd
     background: primary
     search: false
+    
     
 format:
   html:
