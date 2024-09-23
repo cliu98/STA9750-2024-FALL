@@ -12,8 +12,6 @@ website:
     items:                       
       - title: "Home"
         href: index.html
-      - title: "Mini Project 1"
-        href: mp01.html
 
 format:
   html:
