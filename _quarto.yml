@@ -11,7 +11,7 @@ website:
     search: false
     items:                       
       - title: "Home"
-        href: index.html
+        href: index.qmd
 
 format:
   html:
