@@ -25,7 +25,7 @@ FARES <- readxl::read_xlsx("2022_fare_revenue.xlsx") |>
   ungroup()
 
 # Next, expenses
-EXPENSES <- readr::read_csv("MP01/2022_expenses.csv") |>
+EXPENSES <- readr::read_csv("2022_expenses.csv") |>
   select(
     `NTD ID`,
     `Agency`,
@@ -231,19 +231,19 @@ seasonal_variation <- USAGE |>
 print(seasonal_variation)
 
 # Task 5
-# Calculate average UPT per agency per year to only consider agencies with an average UPT of 400,000 or more
-agencies_avg_upt <- USAGE |>
+# Calculate UPT per agency per year to only consider agencies with UPT of 400,000 or more per year
+agencies_400k_upt <- USAGE |>
   mutate(Year = year(month)) |> # Extract year from month
   group_by(`NTD ID`, Agency, Year) |> # Group by agency and year
-  summarize(avg_upt = mean(UPT, na.rm = TRUE)) |> # Calculate average UPT per year
-  filter(avg_upt >= 400000) |> # Keep agencies with avg UPT >= 400,000
+  summarize(Total_UPT = sum(UPT, na.rm = TRUE), .groups = 'drop') |> # Summarize total UPT per Agency, aggregating the UPT across all modes
+  filter(Total_UPT >= 400000) |> # Keep agencies with total UPT >= 400,000 annum
   ungroup() |> # Ungroup to prepare for next operation
   distinct(Agency) # Get distinct agencies
 
 # Filter the 2022 data for only those agencies
 USAGE_2022_ANNUAL <- USAGE |>
   filter(year(month) == 2022) |> # Only data from 2022
-  filter(Agency %in% agencies_avg_upt$Agency) |> # Filter agencies that meet avg UPT condition
+  filter(Agency %in% agencies_400k_upt$Agency) |> # Filter agencies that meet avg UPT condition
   group_by(`NTD ID`, Agency, metro_area, Mode) |> # Group by relevant columns
   summarize(
     UPT = sum(UPT), # Sum UPT for 2022

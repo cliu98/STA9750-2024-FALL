@@ -347,19 +347,19 @@ This concludes the first half of the analysis. A variety of transit metric data 
 The first task at hand is to extract only the 2022 information from USAGE. The parameters of interest kept are `NTD ID`, `Agency`, `metro_area`, `Mode`, `UPT`, `VRM`. Normally, `filtering` just the year and `selecting` the parameters would be straightforward. However, the `UPT` and `VRM` need to be aggregated for the new joined table. Additionally, the `mutate` function is used to convert `NTD ID` to a `double` type in order to match the same type as the `NT ID` in the ***`FINANCIALS`*** table we will be joining to later. The new table is called ***`USAGE_2022_ANNUAL`***. For the farebox recovery analysis, the sample will focus solely on major transit systems, which is defined as those with 400,000 UPT per annum.
 
 ```{R, message = FALSE, warning = FALSE}
-# Calculate average UPT per agency per year to only consider agencies with an average UPT of 400,000 or more
-agencies_avg_upt <- USAGE |>
+# Calculate UPT per agency per year to only consider agencies with UPT of 400,000 or more per year
+agencies_400k_upt <- USAGE |>
   mutate(Year = year(month)) |> # Extract year from month
-  group_by(`NTD ID`, Agency, Year) |>
-  summarize(avg_upt = mean(UPT, na.rm = TRUE)) |> # Calculate average UPT per year
-  filter(avg_upt >= 400000) |> # Keep agencies with avg UPT >= 400,000
+  group_by(`NTD ID`, Agency, Year) |> # Group by agency and year
+  summarize(Total_UPT = sum(UPT, na.rm = TRUE), .groups = 'drop') |> # Summarize total UPT per Agency, aggregating the UPT across all modes
+  filter(Total_UPT >= 400000) |> # Keep agencies with total UPT >= 400,000 annum
   ungroup() |> # Ungroup to prepare for next operation
   distinct(Agency) # Get distinct agencies
 
 # Filter the 2022 data for only those agencies
 USAGE_2022_ANNUAL <- USAGE |>
   filter(year(month) == 2022) |> # Only data from 2022
-  filter(Agency %in% agencies_avg_upt$Agency) |> # Filter agencies that meet avg UPT condition
+  filter(Agency %in% agencies_400k_upt$Agency) |> # Filter agencies that meet avg UPT condition
   group_by(`NTD ID`, Agency, metro_area, Mode) |> # Group by relevant columns
   summarize(
     UPT = sum(UPT), # Sum UPT for 2022
@@ -423,7 +423,7 @@ USAGE_AND_FINANCIALS <- inner_join(
 6.  Which transit system (agency and mode) has the highest total fares per VRM?
 :::
 
-1.  In 2022, the MTA New York City Transit had the most UPT via the Heavy Rail (subway). There was a total of 1,793,073,801 trips taken.
+1.  In 2022, the MTA New York City Transit had the most UPT via the heavy rail (subway). There was a total of 1,793,073,801 trips taken.
 
     ```{R, warning = FALSE}
     most_UPT_2022 <- USAGE_AND_FINANCIALS |>
@@ -444,7 +444,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(highest_farebox)
     ```
 
-3.  In 2022, the Anaheim Transportation Network via bus had the lowest expenses per trip with a ratio of 1.28.
+3.  In 2022, North Carolina State University via bus had the lowest expenses per trip with a ratio of 1.18.
 
     ```{R, warning = FALSE}
     low_expense_UPT <- USAGE_AND_FINANCIALS |>
@@ -455,7 +455,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(low_expense_UPT)
     ```
 
-4.  In 2022, the Tri-County Metropolitan Transportation District of Oregon had the highest total fares per trip with a ratio of 11.7.
+4.  In 2022, the Altoona Metro Transit via demand rail had the highest total fares per trip with a ratio of 660.
 
     ```{R, warning = FALSE}
     high_fare_UPT <- USAGE_AND_FINANCIALS |>
@@ -466,7 +466,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(high_fare_UPT)
     ```
 
-5.  In 2022, the VIA Metropolitan Transit had the lowest expenses per vehicle revenue mile with a ratio of 0.37.
+5.  In 2022, the VIA Metropolitan Transit via vanpool had the lowest expenses per vehicle revenue mile with a ratio of 0.37.
 
     ```{R, warning = FALSE}
     low_expense_VRM <- USAGE_AND_FINANCIALS |>
@@ -477,7 +477,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(low_expense_VRM)
     ```
 
-6.  In 2022, the Jacksonville Transportation Authority had the highest total fares per vehicle revenue mile with a ratio of 158.
+6.  In 2022, the Chicago Water Taxi (Wendella) via Ferry had the highest total fares per vehicle revenue mile with a ratio of 237.
 
     ```{R, warning = FALSE}
     high_fare_VRM <- USAGE_AND_FINANCIALS |>
