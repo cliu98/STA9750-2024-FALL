@@ -2,6 +2,8 @@
 title: "Mini-Project #01: Fiscal Characteristics of Major US Public Transit Systems"
 ---
 
+##### By Chris Liu
+
 ## Introduction
 
 The public transit systems found nationwide in the United States play an important role in mobilizing people in their daily lives. This analysis will give an overview of how the transit systems perform relative to another by examining key metrics such as farebox revenues, total number of trips, total vehicle miles traveled and total revenues and expenses by source.
@@ -12,14 +14,13 @@ This analysis will examine information from 2022 that utilizes data from fare re
 
 #### Preparing, Cleaning & Loading the Dataset
 
-The relevant data sets used in the analysis can be found here:  
+The relevant data sets used in the analysis can be found here:
 
--  [2022 fare revenue](http://www.transit.dot.gov/sites/fta.dot.gov/files/2024-04/2022%20Fare%20Revenue.xlsx)
+-   [2022 fare revenue](http://www.transit.dot.gov/sites/fta.dot.gov/files/2024-04/2022%20Fare%20Revenue.xlsx)
 
--  [2022 expenses](https://data.transportation.gov/api/views/dkxx-zjd6/rows.csv?date=20231102&accessType=DOWNLOAD&bom=true&format=true)
+-   [2022 expenses](https://data.transportation.gov/api/views/dkxx-zjd6/rows.csv?date=20231102&accessType=DOWNLOAD&bom=true&format=true)
 
--  [ridership](https://www.transit.dot.gov/sites/fta.dot.gov/files/2024-09/July%202024%20Complete%20Monthly%20Ridership%20%28with%20adjustments%20and%20estimates%29_240903.xlsx)
-
+-   [ridership](https://www.transit.dot.gov/sites/fta.dot.gov/files/2024-09/July%202024%20Complete%20Monthly%20Ridership%20%28with%20adjustments%20and%20estimates%29_240903.xlsx)
 
 The first step in the analysis is to ingest the relevant data tables and prepare them for data analysis using R. The following code will clean and join the tables into relevant dataframes used in the analysis. The output will create the following dataframes named: ***`FARES`***, ***`EXPENSES`***, ***`FINANCIALS`***, ***`TRIPS`***, ***`MILES`***, and ***`USAGE`***.
 
@@ -123,6 +124,8 @@ sample_n(USAGE, 1000) |>
   DT::datatable()
 ```
 
+<sup>Table 1: Quick Overview of `USAGE`</sup>
+
 #### Transforming Data Table
 
 The analysis will be initially conducted using the dataframe ***`USAGE`***. Some of the provided labels are cumbersome to work with in R. It is doable, but we can make our lives easier by renaming them. The first task at hand is to rename the column `UZA Name` to `metro_area`. The following code will show how that is done.
@@ -183,7 +186,7 @@ datatable(
 )
 ```
 
-Display output table
+<sup>Table 2: Cleaned Up Version of `USAGE`</sup>
 
 ::: callout-note
 ### For my own sanity, I checked if the table had any NA values I needed to consider.
@@ -320,6 +323,10 @@ Asides from the metrics explored above, there are a variety of other questions t
     | Summer |  4,609,142  |
     | Spring |  4,508,331  |
 
+    ------------------------
+
+    <sup>Table 3: Average UPT by Season, NY-NJ, 2018-2022</sup>  
+
     ```{R, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
     seasonal_variation <- USAGE |>
       filter(metro_area == "New York--Jersey City--Newark, NY--NJ") |>
@@ -339,12 +346,13 @@ Asides from the metrics explored above, there are a variety of other questions t
       arrange(desc(avg_trips))
     print(seasonal_variation)
     ```
-
+  
+  
 This concludes the first half of the analysis. A variety of transit metric data was unearthed. A better understanding of the R functions were explored through data analysis. Now that preliminary data has been identified, we can move forward to the next half of the analysis. The fare data available to use is from 2022. In order to do a deeper analysis, the `USAGE` table will need to be converted to a 2022 version in order to join the fare data information together. Once we have a combined table, we can uncover what farebox recovery looked like in 2022.
 
 #### Farebox Recovery
 
-The first task at hand is to extract only the 2022 information from USAGE. The parameters of interest kept are `NTD ID`, `Agency`, `metro_area`, `Mode`, `UPT`, `VRM`. Normally, `filtering` just the year and `selecting` the parameters would be straightforward. However, the `UPT` and `VRM` need to be aggregated for the new joined table. Additionally, the `mutate` function is used to convert `NTD ID` to a `double` type in order to match the same type as the `NT ID` in the ***`FINANCIALS`*** table we will be joining to later. The new table is called ***`USAGE_2022_ANNUAL`***. For the farebox recovery analysis, the sample will focus solely on major transit systems, which is defined as those with 400,000 UPT per annum.
+The first task at hand is to extract only the 2022 information from USAGE. The parameters of interest kept are `NTD ID`, `Agency`, `metro_area`, `Mode`, `UPT`, `VRM`. Normally, `filtering` just the year and `selecting` the parameters would be straightforward. However, the `UPT` and `VRM` need to be aggregated for the new joined table. Additionally, the `mutate` function is used to convert `NTD ID` to a `double` type in order to match the same type as the `NT ID` in the ***`FINANCIALS`*** table we will be joining to later. The new table is called ***`USAGE_2022_ANNUAL`***. For the farebox recovery analysis, the sample will focus solely on major transit systems, which is defined as those with 400,000 UPT per annum. For this definition of major transit systems, the total UPT per Agency was considered (the mode is not taken into consideration, just the Agency as a whole itself).
 
 ```{R, message = FALSE, warning = FALSE}
 # Calculate UPT per agency per year to only consider agencies with UPT of 400,000 or more per year
@@ -410,7 +418,18 @@ USAGE_AND_FINANCIALS <- inner_join(
   FINANCIALS,
   join_by(`NTD ID`, Mode)
   )
-```
+
+datatable( 
+  sample_n(USAGE_AND_FINANCIALS, 1000) |>
+    select(-`Agency Name`) |> # exclude extra agency name column from financials table
+    rename(
+      `Metro Area` = metro_area, # rename for table output to look cleaner
+      `Unlinked Passenger Trips` = UPT, # rename acronym in visual table
+      `Vehicle Revenue Miles` = VRM # rename acronym in visual table
+          )
+)
+```  
+<sup>Table 4: Visual of `USAGE_AND_FINANCIALS`</sup>  
 
 ::: callout-tip
 ### Farebox recovery metrics to be analyzed:
@@ -423,7 +442,7 @@ USAGE_AND_FINANCIALS <- inner_join(
 6.  Which transit system (agency and mode) has the highest total fares per VRM?
 :::
 
-1.  In 2022, the MTA New York City Transit had the most UPT via the heavy rail (subway). There was a total of 1,793,073,801 trips taken.
+1.  In 2022, the MTA New York City Transit had the most UPT via the heavy rail (subway). There was a total of 1,793,073,801 trips taken. This result is not suprising given the sheer population size of the NYC tri-state area, as well as the vast amount of public transportation accessibility throughout the city.
 
     ```{R, warning = FALSE}
     most_UPT_2022 <- USAGE_AND_FINANCIALS |>
@@ -433,7 +452,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(most_UPT_2022)
     ```
 
-2.  In 2022, the County of Miami-Dade via vanpool had the highest farebox recovery with a ratio of 1.67.
+2.  In 2022, the County of Miami-Dade via vanpool had the highest farebox recovery with a ratio of 1.67. I found this result intriguing as vanpool would not have been my first assumption for this metric. Living in Brooklyn, the concept of vanpooling is unfamiliar to me. However, this did give me insight to how the rest of the country can greatly differ depending on the area of interest.
 
     ```{R, warning = FALSE}
     highest_farebox <- USAGE_AND_FINANCIALS |>
@@ -444,7 +463,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(highest_farebox)
     ```
 
-3.  In 2022, North Carolina State University via bus had the lowest expenses per trip with a ratio of 1.18.
+3.  In 2022, North Carolina State University via bus had the lowest expenses per trip with a ratio of 1.18. More insight into the expenses of this transportation mode could provide better context to the performance. A university funded transportation system could potentially have lower operation costs compared to a metropolitan transit system due to less logistical hurdles to overcome.
 
     ```{R, warning = FALSE}
     low_expense_UPT <- USAGE_AND_FINANCIALS |>
@@ -455,7 +474,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(low_expense_UPT)
     ```
 
-4.  In 2022, the Altoona Metro Transit via demand rail had the highest total fares per trip with a ratio of 660.
+4.  In 2022, the Altoona Metro Transit via demand rail had the highest total fares per trip with a ratio of 660. Note that the ratio is absurdly large, there are indications as to why this number is so high. The output shows that there were only a total of 26 unlinked passenger trips for this mode of transportation. The lack of total trips is something to consider when answering this question. I would postulate setting a minimum number of unlinked passenger trips when asking this question if I wanted to explore the data more in depth.
 
     ```{R, warning = FALSE}
     high_fare_UPT <- USAGE_AND_FINANCIALS |>
@@ -466,7 +485,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(high_fare_UPT)
     ```
 
-5.  In 2022, the VIA Metropolitan Transit via vanpool had the lowest expenses per vehicle revenue mile with a ratio of 0.37.
+5.  In 2022, the VIA Metropolitan Transit via vanpool had the lowest expenses per vehicle revenue mile with a ratio of 0.37. Once again, the transportation mode of vanpool has been a key finding in the metrics observed. Somethings that could be further explored are the characteristics of the areas vanpools are popular in.
 
     ```{R, warning = FALSE}
     low_expense_VRM <- USAGE_AND_FINANCIALS |>
@@ -477,7 +496,7 @@ USAGE_AND_FINANCIALS <- inner_join(
     print(low_expense_VRM)
     ```
 
-6.  In 2022, the Chicago Water Taxi (Wendella) via Ferry had the highest total fares per vehicle revenue mile with a ratio of 237.
+6.  In 2022, the Chicago Water Taxi (Wendella) via Ferry had the highest total fares per vehicle revenue mile with a ratio of 237. Like the fourth farebox recovery metric, this data point also seems skewed because of the lack of vehicle revenue miles involved. I would suggest setting a minimum amount of vehicle revenue miles as well to gauge a better understanding of which transit system boasts the highest total fare per vehicle revenue mile.
 
     ```{R, warning = FALSE}
     high_fare_VRM <- USAGE_AND_FINANCIALS |>
