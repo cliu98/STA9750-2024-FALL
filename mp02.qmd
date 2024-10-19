@@ -188,8 +188,8 @@ There are a few columns that contain multiple pieces of data in one cell. For ex
 
 ### Uncovering Insights From the IMDb Data
 
-The first step in the analysis is to get a better understanding of the data we are working with. A series of questions are provided to get a grasp of what information we are able to derive from the provided data. To make things easier, creating a schema map of the tables helps us understand the relationships between each table. We will need to use multiple tables to derive insights to our questions.  
-
+The first step in the analysis is to get a better understanding of the data we are working with. A series of questions are provided to get a grasp of what information we are able to derive from the provided data. To make things easier, creating a schema map of the tables helps us understand the relationships between each table. We will need to use multiple tables to derive insights to our questions.
+  
 ![Schema of Tables Used](mp02schema.jpg)
   
 ::: callout-tip
@@ -318,10 +318,19 @@ Now that we have a list of TV series with more than 12 episodes, we can continue
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 highest_rated_tv_series <- tv_series_12 |>
-  left_join(TITLE_RATINGS, 
-            join_by(tconst == tconst)) |>  # Join with TITLE_RATINGS to get average ratings
-  arrange(desc(averageRating))
-print(highest_rated_tv_series)
+  left_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  ) |> # Join with TITLE_RATINGS to get average ratings
+  ungroup() |>
+  arrange(desc(averageRating)) |>
+  select(tconst, primaryTitle, averageRating) |>
+  slice_head(n=10)
+
+datatable(setNames(highest_rated_tv_series, c("ID", "Title", "Average Rating")),
+  options = list(pageLength = 10, autoWidth = TRUE),
+  caption = "Highest Rated TV Series (Series Ratings)"
+)
 ```
 
 The second approach is averaging the episode ratings for the series:
@@ -339,10 +348,18 @@ series_ratings_byEpisode <- TITLE_EPISODES |>
   arrange(desc(avg_ratings))
 # join onto the TITLE_BASICS table to get the name of the series
 series_ratings_byEpisode <- series_ratings_byEpisode |>
-  left_join(TITLE_BASICS,
-            join_by(parentTconst == tconst)) |>
-  select(parentTconst, primaryTitle, avg_ratings)
-print(series_ratings_byEpisode)
+  left_join(
+    TITLE_BASICS,
+    join_by(parentTconst == tconst)
+  ) |>
+  ungroup() |>
+  select(parentTconst, primaryTitle, avg_ratings) |>
+  slice_head(n=10)
+
+datatable(setNames(series_ratings_byEpisode, c("ID", "Title", "Average Rating")),
+  options = list(pageLength = 10, autoWidth = TRUE),
+  caption = "Highest Rated TV Series (Episode Ratings)"
+)
 ```
 
 We can see right away that the results from both approaches are very different from one another. Depending on the context, either answer is suitable. This all depends on how we define the average rating of a series. Some things to consider are for the second approach, it is possible for some episodes to have no ratings at all which can create some skewing of the mean rating. The TV series rating itself can also be different from the average ratings of the episodes.
@@ -449,7 +466,9 @@ movie_ratings <- TITLE_RATINGS |>
   select (tconst, primaryTitle, weighted_rating) |>
   arrange(desc(weighted_rating))
 
-datatable(setNames(movie_ratings, c("ID", "Title", "Weighted Rating")),
+limited_movie_ratings <- movie_ratings[1:1000, ]  # limit to the first 1000 rows intending to save memory usage
+
+datatable(setNames(limited_movie_ratings, c("ID", "Title", "Weighted Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
   caption = "Movie Titles With Weighted Rating"
 ) |>
@@ -487,7 +506,9 @@ popularity_scaling <- TITLE_RATINGS |>
   select(tconst, primaryTitle, scaled_numVotes) |>
   arrange(desc(scaled_numVotes))
 
-datatable(setNames(popularity_scaling, c("ID", "Title", "Scaled Number of Votes")),
+limited_popularity_scaling <- popularity_scaling[1:1000, ]  # limit to the first 1000 rows intending to save memory usage
+
+datatable(setNames(limited_popularity_scaling, c("ID", "Title", "Scaled Number of Votes")),
   options = list(pageLength = 10, autoWidth = TRUE),
   caption = "Movie Titles With Scaled Votes"
 ) |>
@@ -524,9 +545,11 @@ TITLE_RATINGS_MOVIES <- TITLE_RATINGS |>
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
-datatable(setNames(TITLE_RATINGS_MOVIES, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release  Year")),
+top10_TITLE_RATINGS_MOVIES <- TITLE_RATINGS_MOVIES[1:10, ] # limiting output
+
+datatable(setNames(top10_TITLE_RATINGS_MOVIES, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release  Year")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Movie Titles With Success Score"
+  caption = "Top 10 Movies With Success Score"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
@@ -540,9 +563,11 @@ datatable(setNames(TITLE_RATINGS_MOVIES, c("ID", "Title", "Success Score", "Aver
 bad_movies <- TITLE_RATINGS_MOVIES |>
   arrange(success_score, desc(numVotes))
 
-datatable(setNames(bad_movies, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release  Year")),
+ten_bad_movies <- bad_movies[1:10, ]
+
+datatable(setNames(ten_bad_movies, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release  Year")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Movie Titles With Success Score"
+  caption = "Bad Movies"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
@@ -570,7 +595,7 @@ nolan_projects <- NAME_BASICS |>
   distinct()
 
 datatable(setNames(nolan_projects, c("ID", "Title", "Success Score")),
-          options = list(pageLength = 10, autoWidth = TRUE),
+          options = list(pageLength = 11, autoWidth = TRUE),
           caption = "Christopher Nolan Projects"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
@@ -827,8 +852,8 @@ datatable(setNames(metropolis, c("Project Title", "Release Year", "Genre(s)", "A
           caption = "Metropolis"
 )
 ```
-
-Since the movie is from 1927, the likelihood of any of the key personnel involved in the original film being around is unlikely. We can still double check this using the data provided by IMDb. According to the [Metropolis IMDb page](https://www.imdb.com/title/tt0017136/) the key people are Fritz Lang (director & writer), Thea von Harbou (writer), Brigitte Helm (star), Alfred Abel (star) and Gustav Fröhlich (star). The table below confirms that the key personnel are no longer alive.
+  
+Since the movie is from 1927, the likelihood of any of the key personnel involved in the original film being around is unlikely. We can still double check this using the data provided by IMDb. According to the [Metropolis IMDb page](https://www.imdb.com/title/tt0017136/) the key people are Fritz Lang (director & writer), Thea von Harbou (writer), Brigitte Helm (star), Alfred Abel (star) and Gustav Fröhlich (star). The table below confirms that the key personnel are no longer alive.  
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
