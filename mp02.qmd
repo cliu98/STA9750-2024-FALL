@@ -721,10 +721,11 @@ interactive_decade_success <- ggplot(decade_success_top10, aes(x = decade, y = t
     title = "Top 10 Genres per Decade",
     x = "Decade",
     y = "Number of Successful Movies",
-    color = "Genres"
+    color = "Genres",
+    caption = "Figure 4"
   ) +
   scale_x_continuous(breaks = seq(min(decade_success_top10$decade), max(decade_success_top10$decade), by = 10)) + # Set breaks every 10 years
-  theme_minimal() + # Use a clean theme
+  theme_minimal() + 
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     legend.position = "bottom"
