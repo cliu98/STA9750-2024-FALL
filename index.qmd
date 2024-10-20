@@ -8,8 +8,9 @@ title: "Welcome To My STA9750 Portfolio"
 
 
 [Mini Project #02: The Business of Show Business](https://cliu98.github.io/STA9750-2024-FALL/mp02.html)
-## About Me
 
+
+## About Me
 ### **Chris Liu**
 
 I am currently attending Baruch College in the Zicklin School of Business with an anticpated graudation of May 2026. I am pursuing a MS in Statistics with a focus in data science. I hope to pursue a career within statistical machine learning after graduation. If you're interested in getting connected, here is my [LinkedIn profile.](https://www.linkedin.com/in/chris-liu-80b157162/)
