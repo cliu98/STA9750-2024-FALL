@@ -4,8 +4,10 @@ title: "Welcome To My STA9750 Portfolio"
 
 ## Portfolio Projects
 
-[Mini Project #01: Fiscal Characteristics of Major US Public Transit Systems](https://cliu98.github.io/STA9750-2024-FALL/mp01.html)
+[Mini Project #01: Fiscal Characteristics of Major US Public Transit Systems](https://cliu98.github.io/STA9750-2024-FALL/mp01.html)  
 
+
+[Mini Project #02: The Business of Show Business](https://cliu98.github.io/STA9750-2024-FALL/mp02.html)
 ## About Me
 
 ### **Chris Liu**
