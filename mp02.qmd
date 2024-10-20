@@ -36,15 +36,16 @@ library(DT)
 library(ggplot2)
 library(plotly)
 
-get_imdb_file <- function(fname){
+get_imdb_file <- function(fname) {
   BASE_URL <- "https://datasets.imdbws.com/"
   fname_ext <- paste0(fname, ".tsv.gz")
-  if(!file.exists(fname_ext)){
+  if (!file.exists(fname_ext)) {
     FILE_URL <- paste0(BASE_URL, fname_ext)
-    download.file(FILE_URL, 
-                  destfile = fname_ext)
+    download.file(FILE_URL,
+      destfile = fname_ext
+    )
   }
-  as.data.frame(readr::read_tsv(fname_ext, lazy=FALSE))
+  as.data.frame(readr::read_tsv(fname_ext, lazy = FALSE))
 }
 ```
 
@@ -95,14 +96,15 @@ IMDb includes data for all sorts of media from major studios to independent prod
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 TITLE_RATINGS |>
-    ggplot(aes(x=numVotes)) + 
-    geom_histogram(bins=30) +
-    xlab("Number of IMDB Ratings") + 
-    ylab("Number of Titles") + 
-    ggtitle("Majority of IMDB Titles Have Less than 100 Ratings") + 
-    theme_bw() + 
-    scale_x_log10(label=scales::comma) + 
-    scale_y_continuous(label=scales::comma)
+  ggplot(aes(x = numVotes)) +
+  geom_histogram(bins = 30) +
+  xlab("Number of IMDB Ratings") +
+  ylab("Number of Titles") +
+  ggtitle("Majority of IMDB Titles Have Less than 100 Ratings") +
+  labs(caption = "Figure 1") +
+  theme_bw() +
+  scale_x_log10(label = scales::comma) +
+  scale_y_continuous(label = scales::comma)
 ```
 
 The majority of the titles found in IMDb have less than 100 ratings. We will go ahead and drop any title with less than 100 ratings so our computers are able to run the analysis fluidly. We can apply this drop with the following code:
@@ -148,6 +150,8 @@ The dataset is now more manageable to work with. We can now begin the analysis p
 
 ### Exploring The Data
 
+#### Tidying Data Types
+
 Using the `glimpse` function, we can examine each table to see the *type/mode* for each column. At first glance, the majority of the columns appear to be a *character (string)* vector. Some of these columns should be numerical values instead, but due to missing values `R` converted the missing numerical data into characters instead. We will need to fix this issue by using the `mutate` function along with `as.numeric()` and `as.logical()` on the desired columns. The following code will update the desired columns to the correct format.
 
 ```{R, message = FALSE, warning = FALSE, cache = TRUE}
@@ -189,9 +193,9 @@ There are a few columns that contain multiple pieces of data in one cell. For ex
 ### Uncovering Insights From the IMDb Data
 
 The first step in the analysis is to get a better understanding of the data we are working with. A series of questions are provided to get a grasp of what information we are able to derive from the provided data. To make things easier, creating a schema map of the tables helps us understand the relationships between each table. We will need to use multiple tables to derive insights to our questions.
-  
-![Schema of Tables Used](mp02schema.jpg)
-  
+
+![Figure 2: Schema of Tables Used](mp02schema.jpg)
+
 ::: callout-tip
 ### The first set of metrics of interest are:
 
@@ -222,7 +226,7 @@ count_types <- TITLE_BASICS |>
 
 datatable(setNames(count_types, c("Type", "Total")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Number of movies, TV series, and TV episodes"
+  caption = "Table 1: Number of movies, TV series, and TV episodes"
 )
 ```
 
@@ -294,7 +298,7 @@ mark_hamill_projects <- mark_hamill |>
 
 datatable(setNames(mark_hamill_projects, c("Project Title")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "The 4 Projects Mark Hamill Is Most Known For"
+  caption = "Table 2: The 4 Projects Mark Hamill Is Most Known For"
 )
 ```
 
@@ -329,7 +333,7 @@ highest_rated_tv_series <- tv_series_12 |>
 
 datatable(setNames(highest_rated_tv_series, c("ID", "Title", "Average Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Highest Rated TV Series (Series Ratings)"
+  caption = "Table 3: Highest Rated TV Series (Series Ratings)"
 )
 ```
 
@@ -358,8 +362,9 @@ series_ratings_byEpisode <- series_ratings_byEpisode |>
 
 datatable(setNames(series_ratings_byEpisode, c("ID", "Title", "Average Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Highest Rated TV Series (Episode Ratings)"
-)
+  caption = "Table 4: Highest Rated TV Series (Episode Ratings)"
+) |>
+  formatRound(columns = "Average Rating", digits = 2)
 ```
 
 We can see right away that the results from both approaches are very different from one another. Depending on the context, either answer is suitable. This all depends on how we define the average rating of a series. Some things to consider are for the second approach, it is possible for some episodes to have no ratings at all which can create some skewing of the mean rating. The TV series rating itself can also be different from the average ratings of the episodes.
@@ -394,7 +399,7 @@ early_happy_days_episode_ratings <- TITLE_EPISODES |>
 
 datatable(setNames(early_happy_days_episode_ratings, c("Average Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Happy Days Seasons 1-6 Average Rating"
+  caption = "Table 5: Happy Days Seasons 1-6 Average Rating"
 ) |>
   formatRound(columns = "Average Rating", digits = 2)
 
@@ -409,7 +414,7 @@ later_happy_days_episode_ratings <- TITLE_EPISODES |>
 
 datatable(setNames(later_happy_days_episode_ratings, c("Average Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Happy Days Seasons 7-11 Average Rating"
+  caption = "Table 6: Happy Days Seasons 7-11 Average Rating"
 ) |>
   formatRound(columns = "Average Rating", digits = 2)
 ```
@@ -470,7 +475,7 @@ limited_movie_ratings <- movie_ratings[1:1000, ]  # limit to the first 1000 rows
 
 datatable(setNames(limited_movie_ratings, c("ID", "Title", "Weighted Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Movie Titles With Weighted Rating"
+  caption = "Table 7: Movie Titles With Weighted Rating"
 ) |>
   formatRound(columns = "Weighted Rating", digits = 2)
 ```
@@ -510,7 +515,7 @@ limited_popularity_scaling <- popularity_scaling[1:1000, ]  # limit to the first
 
 datatable(setNames(limited_popularity_scaling, c("ID", "Title", "Scaled Number of Votes")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Movie Titles With Scaled Votes"
+  caption = "Table 8: Movie Titles With Scaled Votes"
 ) |>
   formatRound(columns = "Scaled Number of Votes", digits = 2)
 ```
@@ -541,7 +546,7 @@ TITLE_RATINGS_MOVIES <- TITLE_RATINGS |>
 5.  Come up with a numerical threshold for a project to be a ‘success’; that is, determine a value such that movies above are all “solid” or better.
 :::
 
-1.  Taking a look at the top 10 movies using my success score, all the movies are box office successes.
+1.  Taking a look at the top 10 movies using my success score, all the movies are box office successes with the exception of *The Shawshank Redemption* (however this would go onto be a financial success through other mediums). Box office financial information can be found [here](https://www.boxofficemojo.com/).
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
@@ -549,14 +554,14 @@ top10_TITLE_RATINGS_MOVIES <- TITLE_RATINGS_MOVIES[1:10, ] # limiting output
 
 datatable(setNames(top10_TITLE_RATINGS_MOVIES, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release  Year")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Top 10 Movies With Success Score"
+  caption = "Table 9: Top 10 Movies With Success Score"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
 
 ------------------------------------------------------------------------
 
-2.  Taking a look at the generated list, we can pick out movies with lower success scores and a high number of voters. The 13 lowest scoring movies had at least 20,000 or more voters. Taking a look at the IMDb average rating to measure quality, none of these films were above a 2.0 rating.
+2.  Taking a look at the generated list, we can pick out movies with lower success scores and a high number of voters. The 10 lowest scoring movies had at least 20,000 or more voters. Taking a look at the IMDb average rating to measure quality, none of these films were above a 2.0 rating.
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
@@ -567,7 +572,7 @@ ten_bad_movies <- bad_movies[1:10, ]
 
 datatable(setNames(ten_bad_movies, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release  Year")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Bad Movies"
+  caption = "Table 10: Bad Movies"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
@@ -595,8 +600,8 @@ nolan_projects <- NAME_BASICS |>
   distinct()
 
 datatable(setNames(nolan_projects, c("ID", "Title", "Success Score")),
-          options = list(pageLength = 11, autoWidth = TRUE),
-          caption = "Christopher Nolan Projects"
+  options = list(pageLength = 11, autoWidth = TRUE),
+  caption = "Table 11: Christopher Nolan Projects"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
@@ -618,7 +623,7 @@ oscar_winners <- TITLE_RATINGS_MOVIES |>
 
 datatable(setNames(oscar_winners, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release Year")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Last 5 Oscar Winners"
+  caption = "Table 12: Last 5 Oscar Winners"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
@@ -652,8 +657,10 @@ Now that a "successful" movie is quantifiable, it is time to uncover trends foun
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 movie_genre_success <- TITLE_RATINGS_MOVIES |>
-  left_join(TITLE_BASICS,
-            join_by(tconst == tconst)) |>
+  left_join(
+    TITLE_BASICS,
+    join_by(tconst == tconst)
+  ) |>
   filter(!is.na(genres) & !is.na(startYear.x)) |>
   separate_longer_delim(genres, ",") |>
   mutate(decade = floor(startYear.x / 10) * 10) |> # create a decade column
@@ -663,59 +670,70 @@ decade_success <- movie_genre_success |>
   filter(success_score >= 43.6) |>
   group_by(decade, genres) |>
   summarize(
-    total_movies = n(),  # Count the total number of successful movies
-    .groups = 'drop'
+    total_movies = n(), # Count the total number of successful movies
+    .groups = "drop"
   ) |>
   group_by(decade) |>
-  slice_max(total_movies, n=1) |>
+  slice_max(total_movies, n = 1) |>
   ungroup()
 
 ggplot(decade_success, aes(x = factor(decade), y = total_movies, fill = genres)) +
-  geom_bar(stat = "identity", position = "dodge") +  # Grouped bars
-  labs(title = "Top Genre per Decade",
-       x = "Decade",
-       y = "Number of Successful Movies",
-       fill = "Genres") +
-  theme_minimal() +  # Clean minimal theme
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for clarity
+  geom_bar(stat = "identity", position = "dodge") + # Grouped bars
+  labs(
+    title = "Top Genre per Decade",
+    x = "Decade",
+    y = "Number of Successful Movies",
+    caption = "Figure 3",
+    fill = "Genres"
+  ) +
+  theme_minimal() + # Clean minimal theme
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
 ```
+
+------------------------------------------------------------------------
 
 2.  Once again, **dramas** dominate the genre field over time. **Romance** movies showed success in the past but have fallen out of favor in recent times. The following plot shows the top 10 genres by decade, the plot is interactive allowing users to manipulate the legend to hide any outputs. While the top genres are easily distinguishable, there are some overlapping data points that can be viewed better by hiding selective genre. Dramas have held onto the top spot throughout the time series, the 1980s was the only decade where **comedies** came close to taking the number 1 spot.
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
-
 # look at success of genre type by decade again, but this time including 10 genres to gauge how it changes
 decade_success_top10 <- movie_genre_success |>
   filter(success_score >= 43.6) |>
   group_by(decade, genres) |>
   summarize(
-    total_movies = n(),  # Count the total number of successful movies
-    .groups = 'drop'
+    total_movies = n(), # Count the total number of successful movies
+    .groups = "drop"
   ) |>
   group_by(decade) |>
-  slice_max(total_movies, n=10, with_ties = FALSE) |>
+  slice_max(total_movies, n = 10, with_ties = FALSE) |>
   mutate(rank = dense_rank(desc(total_movies))) |>
   ungroup() |>
-  arrange(decade, rank)  # Sort by decade and rank
-  
+  arrange(decade, rank) # Sort by decade and rank
+
 # visually plot
 interactive_decade_success <- ggplot(decade_success_top10, aes(x = decade, y = total_movies, color = genres, group = genres)) +
-  geom_line(linewidth = 1) +  # Plot the lines
-  geom_point(size = 3) +  # Add points at each decade
-  labs(title = "Top 10 Genres per Decade",
-       x = "Decade",
-       y = "Number of Successful Movies",
-       color = "Genres") +
-  scale_x_continuous(breaks = seq(min(decade_success_top10$decade), max(decade_success_top10$decade), by = 10)) +  # Set breaks every 10 years
-  theme_minimal() +  # Use a clean theme
+  geom_line(linewidth = 1) + # Plot the lines
+  geom_point(size = 3) + # Add points at each decade
+  labs(
+    title = "Top 10 Genres per Decade",
+    x = "Decade",
+    y = "Number of Successful Movies",
+    color = "Genres"
+  ) +
+  scale_x_continuous(breaks = seq(min(decade_success_top10$decade), max(decade_success_top10$decade), by = 10)) + # Set breaks every 10 years
+  theme_minimal() + # Use a clean theme
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for clarity
-    legend.position = "right"
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
   )
 # Convert ggplot to interactive plot using plotly
 ggplotly(interactive_decade_success)
 ```
+
+------------------------------------------------------------------------
 
 3.  There is an ongoing trend here, the genre with most successes since 2010 is once again **dramas**.
 
@@ -734,11 +752,11 @@ colnames(successes_since_2010) <- c("Genre", "Total Successful Movies")
 
 datatable(successes_since_2010,
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Number of Successful Movies by Genre Since 2010"
+  caption = "Table 13: Number of Successful Movies by Genre Since 2010"
 )
 ```
 
-Taking a look at how many movies in each genre was produced since 2010 can help give context as well.
+Taking a look at how many movies in each genre was produced since 2010 can help give context as well. There is definitely an impact by the sheer number of drama movies produced that help it have the highest success rate.
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
@@ -754,11 +772,42 @@ colnames(movie_genres_produced) <- c("Genre", "Total Movies Produced")
 
 datatable(movie_genres_produced,
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Number of Movies Produced by Genre Since 2010"
+  caption = "Table 14: Number of Movies Produced by Genre Since 2010"
 )
 ```
 
-I want to insert a plot that shows the ratio of successful movies to total produced by genres.
+```{R, message = FALSE, warning = FALSE}
+#| code-fold: true  
+genre_distribution_2010 <- left_join(successes_since_2010, movie_genres_produced, by = "Genre") |>
+  mutate(`Unsuccessful Movies` = `Total Movies Produced` - `Total Successful Movies`) |>
+  arrange(desc(`Total Movies Produced`)) |>
+  slice_head(n = 10)
+
+# Pivot the data for long format
+genre_distribution_2010 <- genre_distribution_2010 |>
+  pivot_longer(cols = c(`Unsuccessful Movies`, `Total Successful Movies`),
+               names_to = "Type",
+               values_to = "Count") |>
+  mutate(Type = ifelse(Type == "Total Successful Movies", "Successful Movies", Type))
+
+# Plot the stacked bar chart
+ggplot(genre_distribution_2010, aes(x = reorder(Genre, -`Total Movies Produced`), y = Count, fill = Type)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Movies Produced by Genre Since 2010",
+    x = "Genre",
+    y = "Number of Movies",
+    caption = "Figure 5",
+    fill = "Movie Status"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+```
+
+------------------------------------------------------------------------
 
 4.  If we refer back to the *Top 10 Genres per Decade* plot, we see that the action genre separated itself from the other genres after the 2000s and has claimed to be the 3rd most popular genre since.
 
@@ -767,14 +816,16 @@ Based on the insights we've uncovered, the genre I would like to pursue for my m
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 top_10 <- TITLE_RATINGS_MOVIES |>
-  left_join(TITLE_BASICS,
-            join_by(tconst == tconst)) |>
+  left_join(
+    TITLE_BASICS,
+    join_by(tconst == tconst)
+  ) |>
   select(primaryTitle.x, genres) |>
-  slice_head(n=10)
+  slice_head(n = 10)
 
 datatable(setNames(top_10, c("Title", "Genre(s)")),
-          options = list(pageLength = 10, autoWidth = TRUE),
-          caption = "Top 10 Successful Movies"
+  options = list(pageLength = 10, autoWidth = TRUE),
+  caption = "Table 15: Top 10 Successful Movies"
 )
 ```
 
@@ -786,23 +837,26 @@ Selecting personnel is an important factor in producing a successful movie. For 
 #| code-fold: true
 murphy_nolan_projects <- TITLE_PRINCIPALS |>
   filter(nconst %in% c("nm0634240", "nm0614165")) |>
-  distinct(tconst, nconst) |>  # ensure only distinct person-title pairs
+  distinct(tconst, nconst) |> # ensure only distinct person-title pairs
   group_by(tconst) |>
   summarize(duo_works = n()) |> # counts distinct personnel
   filter(duo_works == 2) # only keep titles where both are present
 
 murphy_nolan_projects <- murphy_nolan_projects |>
-  left_join(TITLE_RATINGS_MOVIES,
-            join_by(tconst == tconst)) |>
+  left_join(
+    TITLE_RATINGS_MOVIES,
+    join_by(tconst == tconst)
+  ) |>
   select(tconst, primaryTitle.x, success_score, startYear)
 
 ggplot(murphy_nolan_projects, aes(x = reorder(primaryTitle.x, success_score), y = success_score)) +
-  geom_bar(stat = "identity", fill = "steelblue") +  # Bar chart with success scores
-  geom_hline(yintercept = 43.6, linetype = "dashed", color = "red", linewidth = 1) +  # horizontal line at y = 43.6 represents solid score
+  geom_bar(stat = "identity", fill = "steelblue") + # Bar chart with success scores
+  geom_hline(yintercept = 43.6, linetype = "dashed", color = "red", linewidth = 1) + # horizontal line at y = 43.6 represents solid score
   labs(
     title = "Success Scores of Murphy and Nolan Projects",
     x = "Project Title",
-    y = "Success Score"
+    y = "Success Score",
+    caption = "Figure 6"
   ) +
   theme_minimal()
 ```
@@ -825,7 +879,7 @@ mescal <- mescal |>
 
 datatable(setNames(mescal, c("Project Title", "Genre(s)")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Paul Mescal Known Works"
+  caption = "Table 16: Paul Mescal Known Works"
 )
 ```
 
@@ -841,19 +895,23 @@ metropolis <- TITLE_BASICS |>
 # if we print this original output, we will get two results for Metropolis. However upon further inspection, the Metropolis form 2001 has nothing in common with the movie I am looking to remake. We can move on by specifying the year.
 
 metropolis <- TITLE_BASICS |>
-  filter(primaryTitle == "Metropolis",
-         titleType == "movie",
-         startYear == 1927) |>
-  left_join(TITLE_RATINGS,
-            join_by(tconst == tconst)) |>
+  filter(
+    primaryTitle == "Metropolis",
+    titleType == "movie",
+    startYear == 1927
+  ) |>
+  left_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  ) |>
   select(primaryTitle, startYear, genres, averageRating, numVotes)
 
 datatable(setNames(metropolis, c("Project Title", "Release Year", "Genre(s)", "Average IMDb Rating", "Number of Votes")),
-          caption = "Metropolis"
+  caption = "Table 17: Metropolis"
 )
 ```
-  
-Since the movie is from 1927, the likelihood of any of the key personnel involved in the original film being around is unlikely. We can still double check this using the data provided by IMDb. According to the [Metropolis IMDb page](https://www.imdb.com/title/tt0017136/) the key people are Fritz Lang (director & writer), Thea von Harbou (writer), Brigitte Helm (star), Alfred Abel (star) and Gustav Fröhlich (star). The table below confirms that the key personnel are no longer alive.  
+
+Since the movie is from 1927, the likelihood of any of the key personnel involved in the original film being around is unlikely. We can still double check this using the data provided by IMDb. According to the [Metropolis IMDb page](https://www.imdb.com/title/tt0017136/) the key people are Fritz Lang (director & writer), Thea von Harbou (writer), Brigitte Helm (star), Alfred Abel (star) and Gustav Fröhlich (star). The table below confirms that the key personnel are no longer alive.
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
@@ -865,8 +923,12 @@ metropolis_personnel <- TITLE_PRINCIPALS |>
   filter(primaryName == "Fritz Lang" | primaryName == "Thea von Harbou" | primaryName == "Brigitte Helm" | primaryName == "Alfred Abel" | primaryName == "Gustav Fröhlich")
 
 datatable(setNames(metropolis_personnel, c("Name", "Birth Year", "Death Year")),
-  caption = "Metropolis Key Personnel"
+  caption = "Table 18: Metropolis Key Personnel"
 )
 ```
 
 ## Studio Pitch
+
+Dramas have been the bestselling genre in the movie industry in the last century. Between the 1980s to the 2010s, the number of successful drama movies has increased by 394%. Part of the success comes from intertwining the drama genre with other genres to create a more profound story. Among the top ten successful movies, 90% are dramas. Taking a deeper look, 70% of the top ten successful movies blend drama with another genre type. Dramas captivate an audience using emotions and relatability. Tying in another genre adds another layer of complexity that enhances the viewing experience.
+
+All of Christopher Nolan’s directorial works have been well received. 58% of the movies Nolan directed included drama as a genre. Cillian Murphy has been a frequent collaborator of Nolan. All their films together have been hits, their most recent work in Oppenheimer won an Oscar award. Recently, Paul Mescal has garnered attention for his work in the drama genre but has yet to reach stardom. Imagine bringing the three individuals together for a drama project. From Christopher Nolan, the visionary mind behind Inception; and from Cillian Murphy, beloved star of Oppenheimer; and from Paul Mescal, television icon of TV dramas, comes the timeless tail of Metropolis, a story of social inequality, dystopian society, and the effects of industrialization coming soon to a theater near you. Metropolis is primed for a remake, with the star power behind the project, a box office hit is guaranteed.
