@@ -22,8 +22,10 @@ if (!require("tidyr")) install.packages("tidyr")
 if (!require("stringr")) install.packages("stringr")
 if (!require("DT")) install.packages("DT")
 if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("gganimate")) install.packages("gganimate")
+if (!require("gifski")) install.packages("gifski")
 if (!require("plotly")) install.packages("plotly")
-if (!require("plotly")) install.packages("treemap")
+if (!require("treemap")) install.packages("treemap")
 ```
 
 The dataset used in the analysis contains large files. It will take some time for the data to be downloaded and extracted. The following code will download the files and create six relevant dataframes that will be referenced throughout the analysis.
@@ -35,6 +37,8 @@ library(tidyr)
 library(stringr)
 library(DT)
 library(ggplot2)
+library(gganimate)
+library(gifski)
 library(plotly)
 library(treemap)
 
@@ -103,7 +107,6 @@ TITLE_RATINGS |>
   xlab("Number of IMDB Ratings") +
   ylab("Number of Titles") +
   ggtitle("Majority of IMDB Titles Have Less than 100 Ratings") +
-  labs(caption = "Figure 1") +
   theme_bw() +
   scale_x_log10(label = scales::comma) +
   scale_y_continuous(label = scales::comma)
@@ -122,26 +125,36 @@ Now that we have downsized the amount of titles we will be analyzing, we can app
 ```{R, message = FALSE, warning = FALSE, cache = TRUE}
 #| code-fold: true
 TITLE_BASICS <- TITLE_BASICS |>
-    semi_join(TITLE_RATINGS, 
-              join_by(tconst == tconst))
+  semi_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  )
 
 TITLE_CREW <- TITLE_CREW |>
-    semi_join(TITLE_RATINGS, 
-              join_by(tconst == tconst))
+  semi_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  )
 
 TITLE_EPISODES_1 <- TITLE_EPISODES |>
-    semi_join(TITLE_RATINGS, 
-              join_by(tconst == tconst))
+  semi_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  )
 TITLE_EPISODES_2 <- TITLE_EPISODES |>
-    semi_join(TITLE_RATINGS, 
-              join_by(parentTconst == tconst))
+  semi_join(
+    TITLE_RATINGS,
+    join_by(parentTconst == tconst)
+  )
 
-TITLE_EPISODES <- bind_rows(TITLE_EPISODES_1,
-                            TITLE_EPISODES_2) |>
-    distinct()
+TITLE_EPISODES <- bind_rows(
+  TITLE_EPISODES_1,
+  TITLE_EPISODES_2
+) |>
+  distinct()
 
 TITLE_PRINCIPALS <- TITLE_PRINCIPALS |>
-    semi_join(TITLE_RATINGS, join_by(tconst == tconst))
+  semi_join(TITLE_RATINGS, join_by(tconst == tconst))
 
 
 rm(TITLE_EPISODES_1)
@@ -160,32 +173,42 @@ Using the `glimpse` function, we can examine each table to see the *type/mode* f
 #| code-fold: true
 # Clean the NAMES_BASICS table, replace missing string values to numeric NA values
 NAME_BASICS <- NAME_BASICS |>
-  mutate(birthYear = as.numeric(birthYear),
-         deathYear = as.numeric(deathYear))
+  mutate(
+    birthYear = as.numeric(birthYear),
+    deathYear = as.numeric(deathYear)
+  )
 
 # TITLE_BASICS has 4 column types to correct, isAdult, startYear, endYear and runtimeMinutes
 TITLE_BASICS <- TITLE_BASICS |>
-  mutate(isAdult = as.logical(isAdult),
-         startYear = as.numeric(startYear),
-         endYear = as.numeric(endYear),
-         runtimeMinutes = as.numeric(runtimeMinutes))
+  mutate(
+    isAdult = as.logical(isAdult),
+    startYear = as.numeric(startYear),
+    endYear = as.numeric(endYear),
+    runtimeMinutes = as.numeric(runtimeMinutes)
+  )
 
 # TITLE_EPISODES has 2 column types to correct, seasonNumber and episodeNumber
 TITLE_EPISODES <- TITLE_EPISODES |>
-  mutate(seasonNumber = as.numeric(seasonNumber),
-         episodeNumber = as.numeric(episodeNumber))
+  mutate(
+    seasonNumber = as.numeric(seasonNumber),
+    episodeNumber = as.numeric(episodeNumber)
+  )
 
 # TITLE_RATINGS has no columns to correct
 
 # TITLE_CREW has the correct column types but I want to convert the \\N values to NA instead
 TITLE_CREW <- TITLE_CREW |>
-  mutate(directors = na_if(directors, "\\N"),
-         writers = na_if(writers, "\\N"))
+  mutate(
+    directors = na_if(directors, "\\N"),
+    writers = na_if(writers, "\\N")
+  )
 
 # TITLE_PRINCIPALS has the correct column types but I want to convert the \\N values to NA instead
 TITLE_PRINCIPALS <- TITLE_PRINCIPALS |>
-  mutate(job = na_if(job, "\\N"),
-         characters= na_if(characters, "\\N"))
+  mutate(
+    job = na_if(job, "\\N"),
+    characters = na_if(characters, "\\N")
+  )
 ```
 
 ::: {.callout-caution collapse="true"}
@@ -196,7 +219,7 @@ There are a few columns that contain multiple pieces of data in one cell. For ex
 
 The first step in the analysis is to get a better understanding of the data we are working with. A series of questions are provided to get a grasp of what information we are able to derive from the provided data. To make things easier, creating a schema map of the tables helps us understand the relationships between each table. We will need to use multiple tables to derive insights to our questions.
 
-![Figure 2: Schema of Tables Used](mp02schema.jpg)
+![Schema of Tables Used](mp02schema.jpg)
 
 ::: callout-tip
 ### The first set of metrics of interest are:
@@ -244,7 +267,7 @@ oldest_living_person <- NAME_BASICS |>
     birthYear >= 1908
   ) |> # data is incomplete from deathYear, only considering people born after 1908 as there are incomplete entries (the oldest verified living person in the world as of Oct 2024 was born in 1908)
   arrange(birthYear) |> # order from oldest to youngest
-  slice_head(n=10) |>
+  slice_head(n = 10) |>
   select(primaryName)
 # note that only the birth year is available, no months or dates so this may not be as accurate as I'd like
 
@@ -263,22 +286,34 @@ datatable(setNames(oldest_living_person, c("Name")),
 
 # Find the episode with a perfect rating and over 200,000 ratings
 perfect_episode <- TITLE_BASICS |>
-  left_join(TITLE_RATINGS, 
-            join_by (tconst == tconst)) |>
-  filter(titleType == "tvEpisode",
-         averageRating == 10,
-         numVotes >= 200000)
+  left_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  ) |>
+  filter(
+    titleType == "tvEpisode",
+    averageRating == 10,
+    numVotes >= 200000
+  )
 
 # Join back to TITLE_EPISODES and TITLE_BASICS to get the series name
 perfect_episode_series <- perfect_episode |>
-  left_join(TITLE_EPISODES,
-            join_by(tconst == tconst)) |>
-  left_join(TITLE_BASICS, 
-            join_by (parentTconst == tconst)) |>
-  rename(episode_title = primaryTitle.x,   # rename column to episode title
-         series_title = primaryTitle.y) |> # rename column to series title
-  select(series_title,
-         episode_title)
+  left_join(
+    TITLE_EPISODES,
+    join_by(tconst == tconst)
+  ) |>
+  left_join(
+    TITLE_BASICS,
+    join_by(parentTconst == tconst)
+  ) |>
+  rename(
+    episode_title = primaryTitle.x, # rename column to episode title
+    series_title = primaryTitle.y
+  ) |> # rename column to series title
+  select(
+    series_title,
+    episode_title
+  )
 print(perfect_episode_series)
 ```
 
@@ -317,10 +352,12 @@ datatable(setNames(mark_hamill_projects, c("Project Title")),
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 tv_series_12 <- TITLE_BASICS |>
-  filter(titleType == "tvSeries") |>  # Only want TV series
-  left_join(TITLE_EPISODES, 
-            join_by(tconst == parentTconst)) |>  # Join with TITLE_EPISODES to count number of episodes
-  group_by(tconst, primaryTitle) |>  # Group by series to count episodes
+  filter(titleType == "tvSeries") |> # Only want TV series
+  left_join(
+    TITLE_EPISODES,
+    join_by(tconst == parentTconst)
+  ) |> # Join with TITLE_EPISODES to count number of episodes
+  group_by(tconst, primaryTitle) |> # Group by series to count episodes
   summarise(total_episodes = n()) |> # Count total number of episodes
   filter(total_episodes > 12)
 ```
@@ -337,7 +374,7 @@ highest_rated_tv_series <- tv_series_12 |>
   ungroup() |>
   arrange(desc(averageRating)) |>
   select(tconst, primaryTitle, averageRating) |>
-  slice_head(n=10)
+  slice_head(n = 10)
 
 datatable(setNames(highest_rated_tv_series, c("ID", "Title", "Average Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
@@ -351,10 +388,14 @@ The second approach is averaging the episode ratings for the series:
 #| code-fold: true
 # find the series and average rating by aggregating the episode ratings
 series_ratings_byEpisode <- TITLE_EPISODES |>
-  semi_join(tv_series_12,
-            join_by(parentTconst == tconst)) |>
-  left_join(TITLE_RATINGS,
-            join_by(tconst == tconst)) |>
+  semi_join(
+    tv_series_12,
+    join_by(parentTconst == tconst)
+  ) |>
+  left_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  ) |>
   group_by(parentTconst) |>
   summarise(avg_ratings = mean(averageRating)) |>
   arrange(desc(avg_ratings))
@@ -366,7 +407,7 @@ series_ratings_byEpisode <- series_ratings_byEpisode |>
   ) |>
   ungroup() |>
   select(parentTconst, primaryTitle, avg_ratings) |>
-  slice_head(n=10)
+  slice_head(n = 10)
 
 datatable(setNames(series_ratings_byEpisode, c("ID", "Title", "Average Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
@@ -385,10 +426,12 @@ We can see right away that the results from both approaches are very different f
 #| code-fold: true
 # Get tconst for the series first so we can find the episode ratings after
 happy_days_id <- TITLE_BASICS |>
-  filter(primaryTitle == "Happy Days",
-         titleType == "tvSeries",
-         startYear == 1974,
-         endYear == 1984) |>
+  filter(
+    primaryTitle == "Happy Days",
+    titleType == "tvSeries",
+    startYear == 1974,
+    endYear == 1984
+  ) |>
   select(tconst)
 ```
 
@@ -428,10 +471,11 @@ combined_ratings <- bind_rows(early_happy_days_episode_ratings, later_happy_days
 
 ggplot(combined_ratings, aes(x = season, y = avg_rating, fill = season)) +
   geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Average Ratings of Happy Days",
-       x = "Seasons",
-       y = "Average Rating",
-       caption = "Figure 3") +
+  labs(
+    title = "Average Ratings of Happy Days",
+    x = "Seasons",
+    y = "Average Rating"
+  ) +
   theme_minimal() +
   scale_fill_manual(values = c("Early Seasons (1-6)" = "blue", "Later Seasons (7-11)" = "red")) +
   theme(legend.position = "bottom")
@@ -447,15 +491,22 @@ I will employ a success score for each movie based on IMDb ratings and number of
 
 ### Custom Success Metric
 
-Based on the Bayesian average, I will define a new metric called `weighted_rating` for each movie title as a new rating measurement. The metric will be defined as `weighted_rating = [(averageRating * numVotes) / (numVotes + avg_num_voters)] + [avg_num_voters/(numVotes + avg_num_voters)]*avg_movie_rating`. As it stands, the variables `avg_num_voters` and `avg_movie_rating` are undefined in our data, but will be defined momentarily. The variable names are representative of what they define, we will be sampling the average number of voters and the average movie rating across all movies in our data. Having these metrics will give us a baseline to work with when quantifying the success of a movie.
+Based on the Bayesian average, I will define a new metric called `weighted_rating` for each movie title as a new rating measurement. The metric will be defined as:
+
+$$ weighted\_rating = [(averageRating * numVotes) / (numVotes + avg\_num\_voters)] $$ 
+$$ + [avg\_num\_voters/(numVotes + avg\_num\_voters)]*avg\_movie\_rating $$
+
+As it stands, the variables `avg_num_voters` and `avg_movie_rating` are undefined in our data, but will be defined momentarily. The variable names are representative of what they define, we will be sampling the average number of voters and the average movie rating across all movies in our data. Having these metrics will give us a baseline to work with when quantifying the success of a movie.
 
 Here we define the average number of voters:
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 avg_num_voters <- TITLE_RATINGS |>
-  left_join(TITLE_BASICS,
-            join_by(tconst == tconst)) |>
+  left_join(
+    TITLE_BASICS,
+    join_by(tconst == tconst)
+  ) |>
   filter(titleType == "movie") |>
   summarize(avg_votes = mean(numVotes))
 print(avg_num_voters)
@@ -468,8 +519,10 @@ Next, we define the average movie rating:
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 avg_movie_rating <- TITLE_RATINGS |>
-  left_join(TITLE_BASICS,
-            join_by(tconst == tconst)) |>
+  left_join(
+    TITLE_BASICS,
+    join_by(tconst == tconst)
+  ) |>
   filter(titleType == "movie") |>
   summarize(avg_rating = mean(averageRating))
 print(avg_movie_rating)
@@ -482,14 +535,16 @@ With our baselines variables established, I will now create a new table that con
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 movie_ratings <- TITLE_RATINGS |>
-  left_join(TITLE_BASICS,
-            join_by(tconst == tconst)) |>
+  left_join(
+    TITLE_BASICS,
+    join_by(tconst == tconst)
+  ) |>
   filter(titleType == "movie") |>
-  mutate(weighted_rating = ((averageRating*numVotes)/(numVotes + 8700)) + ((8700*5.9)/(numVotes + 8700))) |>
-  select (tconst, primaryTitle, weighted_rating) |>
+  mutate(weighted_rating = ((averageRating * numVotes) / (numVotes + 8700)) + ((8700 * 5.9) / (numVotes + 8700))) |>
+  select(tconst, primaryTitle, weighted_rating) |>
   arrange(desc(weighted_rating))
 
-limited_movie_ratings <- movie_ratings[1:1000, ]  # limit to the first 1000 rows intending to save memory usage
+limited_movie_ratings <- movie_ratings[1:1000, ] # limit to the first 1000 rows intending to save memory usage
 
 datatable(setNames(limited_movie_ratings, c("ID", "Title", "Weighted Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
@@ -507,7 +562,7 @@ max(
     left_join(TITLE_BASICS, join_by(tconst == tconst)) |>
     filter(titleType == "movie") |>
     pull(numVotes)
-) # returns 2946100 
+) # returns 2946100
 
 min(
   TITLE_RATINGS |>
@@ -522,14 +577,16 @@ Since there is such a large discrepancy between the maximum and minimum, a logar
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 popularity_scaling <- TITLE_RATINGS |>
-  left_join(TITLE_BASICS,
-            join_by(tconst == tconst)) |>
+  left_join(
+    TITLE_BASICS,
+    join_by(tconst == tconst)
+  ) |>
   filter(titleType == "movie") |>
-  mutate(scaled_numVotes = log(numVotes +1)) |>
+  mutate(scaled_numVotes = log(numVotes + 1)) |>
   select(tconst, primaryTitle, scaled_numVotes) |>
   arrange(desc(scaled_numVotes))
 
-limited_popularity_scaling <- popularity_scaling[1:1000, ]  # limit to the first 1000 rows intending to save memory usage
+limited_popularity_scaling <- popularity_scaling[1:1000, ] # limit to the first 1000 rows intending to save memory usage
 
 datatable(setNames(limited_popularity_scaling, c("ID", "Title", "Scaled Number of Votes")),
   options = list(pageLength = 10, autoWidth = TRUE),
@@ -537,18 +594,25 @@ datatable(setNames(limited_popularity_scaling, c("ID", "Title", "Scaled Number o
 ) |>
   formatRound(columns = "Scaled Number of Votes", digits = 2)
 ```
-
-Tying it all together now, I will define a success score by multiplying the weighted rating and the scaled popularity factor. I've defined the new table as `TITLE_RATINGS_MOVIES`, and will use my new `success_score` metric for further analysis.
+  
+  
+Tying it all together now, I will define a success score by multiplying the **weighted rating** and the **scaled popularity factor**. I've defined the new table as `TITLE_RATINGS_MOVIES`, and will use my new `success_score` metric for further analysis.
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 TITLE_RATINGS_MOVIES <- TITLE_RATINGS |>
-  left_join(movie_ratings,
-            join_by(tconst == tconst)) |>
-  left_join(popularity_scaling,
-            join_by(tconst == tconst)) |>
-  left_join(TITLE_BASICS,
-            join_by(tconst == tconst)) |>
+  left_join(
+    movie_ratings,
+    join_by(tconst == tconst)
+  ) |>
+  left_join(
+    popularity_scaling,
+    join_by(tconst == tconst)
+  ) |>
+  left_join(
+    TITLE_BASICS,
+    join_by(tconst == tconst)
+  ) |>
   mutate(success_score = weighted_rating * scaled_numVotes) |>
   select(tconst, primaryTitle.x, success_score, averageRating, numVotes, startYear) |>
   arrange(desc(success_score))
@@ -572,12 +636,12 @@ top10_TITLE_RATINGS_MOVIES <- TITLE_RATINGS_MOVIES[1:10, ] # limiting output
 
 treemap(
   top10_TITLE_RATINGS_MOVIES,
-  index = "primaryTitle.x",    
-  vSize = "success_score",     
-  vColor = "primaryTitle.x",   
-  type = "index",              
+  index = "primaryTitle.x",
+  vSize = "success_score",
+  vColor = "primaryTitle.x",
+  type = "index",
   title = "Top 10 Movies by Success Score",
-  fontsize.labels = 10,        
+  fontsize.labels = 10,
   fontsize.title = 14,
   draw.legend = FALSE
 )
@@ -707,7 +771,6 @@ ggplot(decade_success, aes(x = factor(decade), y = total_movies, fill = genres))
     title = "Top Genre per Decade",
     x = "Decade",
     y = "Number of Successful Movies",
-    caption = "Figure 4",
     fill = "Genres"
   ) +
   theme_minimal() + # Clean minimal theme
@@ -746,7 +809,6 @@ interactive_decade_success <- ggplot(decade_success_top10, aes(x = decade, y = t
     x = "Decade",
     y = "Number of Successful Movies",
     color = "Genres",
-    caption = "Figure 5"
   ) +
   scale_x_continuous(breaks = seq(min(decade_success_top10$decade), max(decade_success_top10$decade), by = 10)) + # Set breaks every 10 years
   theme_minimal() + # Use a clean theme
@@ -789,20 +851,21 @@ genre_distribution_2010 <- left_join(successes_since_2010, movie_genres_produced
 
 # pivot the data for long format
 genre_distribution_2010 <- genre_distribution_2010 |>
-  pivot_longer(cols = c(`Unsuccessful Movies`, total_movies),
-               names_to = "Type",
-               values_to = "Count") |>
+  pivot_longer(
+    cols = c(`Unsuccessful Movies`, total_movies),
+    names_to = "Type",
+    values_to = "Count"
+  ) |>
   mutate(Type = ifelse(Type == "total_movies", "Successful Movies", Type))
 
 # create a dumbbell plot
 ggplot(genre_distribution_2010, aes(x = Count, y = reorder(genres, Count), group = Type)) +
-  geom_segment(aes(xend = 0, yend = reorder(genres, Count)), color = "grey", size = 1) +  # Draw lines to x = 0
-  geom_point(aes(color = Type), size = 3) +  # Points for each type
+  geom_segment(aes(xend = 0, yend = reorder(genres, Count)), color = "grey", size = 1) + # Draw lines to x = 0
+  geom_point(aes(color = Type), size = 3) + # Points for each type
   labs(
     title = "Distribution of Movie Success by Genre Since 2010",
     x = "Number of Movies",
-    y = "Genre",
-    caption = "Figure 6"
+    y = "Genre"
   ) +
   scale_color_manual(values = c("Successful Movies" = "blue", "Unsuccessful Movies" = "red")) +
   theme_minimal() +
@@ -813,7 +876,37 @@ ggplot(genre_distribution_2010, aes(x = Count, y = reorder(genres, Count), group
 
 ------------------------------------------------------------------------
 
-4.  If we refer back to the *Top 10 Genres per Decade* plot, we see that the action genre separated itself from the other genres after the 2000s and has claimed to be the 3rd most popular genre since.
+4.  If we refer back to the *Top 10 Genres per Decade* plot, we see that the action genre separated itself from the other genres after the 2000s and has claimed to be the 3rd most popular genre since. Below we can see how the popularity changes over time for each genre to get a better individual understanding.
+
+```{r, echo=FALSE}
+save_directory <- "~/STA9750-2024-FALL/docs"
+if (!dir.exists(save_directory)) {
+  dir.create(save_directory)
+}
+```
+
+```{R, message = FALSE, warning = FALSE}
+#| code-fold: true
+
+animate_decade_genre <- ggplot(decade_success_top10, aes(x = decade, y = total_movies, color = genres, group = genres)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 1) +
+  labs(
+    title = "Top 10 Genres per Decade by Number of Successful Movies",
+    x = "Decade",
+    y = "Number of Successful Movies"
+  ) +
+  scale_x_continuous(breaks = seq(min(decade_success_top10$decade), max(decade_success_top10$decade), by = 10)) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    legend.position = "none"
+  ) +
+  facet_wrap(~genres) +
+  transition_reveal(decade) # animate the line growth over time (decade)
+
+animate(animate_decade_genre, renderer = gifski_renderer(file = paste0(save_directory, "/decade_success_animation.gif")))
+```
 
 Based on the insights we've uncovered, the genre I would like to pursue for my movie project is **drama**. According to IMDb, "the drama genre is a broad category that features stories portraying human experiences, emotions, conflicts, and relationships in a realistic and emotionally impactful way". Taking a closer look at the most successful movies from my own metric in the table below, we see that dramas occupy 9/10 on the list. Due note that the majority of the titles have multiple genres. Drama coexists with other genres on this list, letting us know that success can be created by blending other genres together with drama. While I do want the main focus to be drama, I definitely will want to blend other elements in to give a more refined story.
 
@@ -859,8 +952,7 @@ ggplot(murphy_nolan_projects, aes(x = reorder(primaryTitle.x, success_score), y 
   labs(
     title = "Success Scores of Murphy and Nolan Projects",
     x = "Project Title",
-    y = "Success Score",
-    caption = "Figure 7"
+    y = "Success Score"
   ) +
   theme_minimal()
 ```
@@ -937,4 +1029,4 @@ Dramas have been the bestselling genre in the movie industry in the last century
 
 All of Christopher Nolan’s directorial works have been well received. 58% of the movies Nolan directed included drama as a genre. Cillian Murphy has been a frequent collaborator of Nolan. All their films together have been hits, their most recent work in Oppenheimer won an Oscar award. Recently, Paul Mescal has garnered attention for his work in the drama genre but has yet to reach stardom. Imagine bringing the three individuals together for a drama project. From Christopher Nolan, the visionary mind behind Inception; and from Cillian Murphy, beloved star of Oppenheimer; and from Paul Mescal, television icon of TV dramas, comes the timeless tail of Metropolis, a story of social inequality, dystopian society, and the effects of industrialization coming soon to a theater near you. Metropolis is primed for a remake, with the star power behind the project a box office hit is guaranteed.
 
-![Figure 8: Promotional Metropolis Remake Poster, generated by ChatGPT](mp02remakeposter.png)
+![Promotional Metropolis Remake Poster, generated by ChatGPT](mp02remakeposter.png)
