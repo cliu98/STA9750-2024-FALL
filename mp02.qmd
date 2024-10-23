@@ -23,6 +23,7 @@ if (!require("stringr")) install.packages("stringr")
 if (!require("DT")) install.packages("DT")
 if (!require("ggplot2")) install.packages("ggplot2")
 if (!require("plotly")) install.packages("plotly")
+if (!require("plotly")) install.packages("treemap")
 ```
 
 The dataset used in the analysis contains large files. It will take some time for the data to be downloaded and extracted. The following code will download the files and create six relevant dataframes that will be referenced throughout the analysis.
@@ -35,6 +36,7 @@ library(stringr)
 library(DT)
 library(ggplot2)
 library(plotly)
+library(treemap)
 
 get_imdb_file <- function(fname) {
   BASE_URL <- "https://datasets.imdbws.com/"
@@ -232,7 +234,7 @@ datatable(setNames(count_types, c("Type", "Total")),
 
 ------------------------------------------------------------------------
 
-2.  There are some things to consider when working with the provided data. In the `NAME_BASICS` table we are provided the columns `birthYear` and `deathYear`. The issue at hand to consider is that the value of `NA` in the `deathYear` column can either indicate the person is either still alive or the record is incomplete. To tidy this up, as of October 2024 the oldest person alive in the world was born in 1908. I will use this a benchmark for the birth year when filtering for this person. Another thing to keep in mind is that the data does not provide a month or date, so we cannot distinguish who is older for people that share the same birth year.
+2.  There are some things to consider when working with the provided data. In the `NAME_BASICS` table we are provided the columns `birthYear` and `deathYear`. The issue at hand to consider is that the value of `NA` in the `deathYear` column can either indicate the person is either still alive or the record is incomplete. To tidy this up, as of October 2024 the oldest person alive in the world was born in 1908. I will use this as a benchmark for the birth year when filtering for this person. Another thing to keep in mind is that the data does not provide a month or date, so we cannot distinguish who is older for people that share the same birth year. The following is a list of the 10 oldest living people in the data, however we cannot distinguish any further from the available data.
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
@@ -242,8 +244,14 @@ oldest_living_person <- NAME_BASICS |>
     birthYear >= 1908
   ) |> # data is incomplete from deathYear, only considering people born after 1908 as there are incomplete entries (the oldest verified living person in the world as of Oct 2024 was born in 1908)
   arrange(birthYear) |> # order from oldest to youngest
-  slice(1) # note that only the birth year is available, no months or dates so this may not be as accurate as I'd like
-print(oldest_living_person$primaryName)
+  slice_head(n=10) |>
+  select(primaryName)
+# note that only the birth year is available, no months or dates so this may not be as accurate as I'd like
+
+datatable(setNames(oldest_living_person, c("Name")),
+  options = list(pageLength = 10, autoWidth = TRUE),
+  caption = "Table 2: Oldest Living Person in IMDb"
+)
 ```
 
 ------------------------------------------------------------------------
@@ -298,7 +306,7 @@ mark_hamill_projects <- mark_hamill |>
 
 datatable(setNames(mark_hamill_projects, c("Project Title")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 2: The 4 Projects Mark Hamill Is Most Known For"
+  caption = "Table 3: The 4 Projects Mark Hamill Is Most Known For"
 )
 ```
 
@@ -333,7 +341,7 @@ highest_rated_tv_series <- tv_series_12 |>
 
 datatable(setNames(highest_rated_tv_series, c("ID", "Title", "Average Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 3: Highest Rated TV Series (Series Ratings)"
+  caption = "Table 4: Highest Rated TV Series (Series Ratings)"
 )
 ```
 
@@ -362,7 +370,7 @@ series_ratings_byEpisode <- series_ratings_byEpisode |>
 
 datatable(setNames(series_ratings_byEpisode, c("ID", "Title", "Average Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 4: Highest Rated TV Series (Episode Ratings)"
+  caption = "Table 5: Highest Rated TV Series (Episode Ratings)"
 ) |>
   formatRound(columns = "Average Rating", digits = 2)
 ```
@@ -389,34 +397,44 @@ Now that `tconst` has been identified, we can find the average ratings of the ea
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
 early_happy_days_episode_ratings <- TITLE_EPISODES |>
-  semi_join(happy_days_id,
-            join_by(parentTconst == tconst)) |>
-  left_join(TITLE_RATINGS,
-            join_by(tconst == tconst)) |>
+  semi_join(
+    happy_days_id,
+    join_by(parentTconst == tconst)
+  ) |>
+  left_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  ) |>
   drop_na() |> # get rid of any ratings that are NA
   filter(seasonNumber < 7) |> # only care about seasons 1-6
-  summarize(avg_rating = mean(averageRating))
-
-datatable(setNames(early_happy_days_episode_ratings, c("Average Rating")),
-  options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 5: Happy Days Seasons 1-6 Average Rating"
-) |>
-  formatRound(columns = "Average Rating", digits = 2)
+  summarize(avg_rating = mean(averageRating)) |>
+  mutate(season = "Early Seasons (1-6)")
 
 later_happy_days_episode_ratings <- TITLE_EPISODES |>
-  semi_join(happy_days_id,
-            join_by(parentTconst == tconst)) |>
-  left_join(TITLE_RATINGS,
-            join_by(tconst == tconst)) |>
+  semi_join(
+    happy_days_id,
+    join_by(parentTconst == tconst)
+  ) |>
+  left_join(
+    TITLE_RATINGS,
+    join_by(tconst == tconst)
+  ) |>
   drop_na() |> # get rid of any ratings that are NA
   filter(seasonNumber >= 7) |> # only care about seasons 7-11
-  summarize(avg_rating = mean(averageRating))
+  summarize(avg_rating = mean(averageRating)) |>
+  mutate(season = "Later Seasons (7-11)")
 
-datatable(setNames(later_happy_days_episode_ratings, c("Average Rating")),
-  options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 6: Happy Days Seasons 7-11 Average Rating"
-) |>
-  formatRound(columns = "Average Rating", digits = 2)
+combined_ratings <- bind_rows(early_happy_days_episode_ratings, later_happy_days_episode_ratings)
+
+ggplot(combined_ratings, aes(x = season, y = avg_rating, fill = season)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Average Ratings of Happy Days",
+       x = "Seasons",
+       y = "Average Rating",
+       caption = "Figure 3") +
+  theme_minimal() +
+  scale_fill_manual(values = c("Early Seasons (1-6)" = "blue", "Later Seasons (7-11)" = "red")) +
+  theme(legend.position = "bottom")
 ```
 
 Based on the data provided, the later seasons did indeed have a lower average rating compared to the earlier seasons.
@@ -475,7 +493,7 @@ limited_movie_ratings <- movie_ratings[1:1000, ]  # limit to the first 1000 rows
 
 datatable(setNames(limited_movie_ratings, c("ID", "Title", "Weighted Rating")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 7: Movie Titles With Weighted Rating"
+  caption = "Table 6: Movie Titles With Weighted Rating"
 ) |>
   formatRound(columns = "Weighted Rating", digits = 2)
 ```
@@ -515,7 +533,7 @@ limited_popularity_scaling <- popularity_scaling[1:1000, ]  # limit to the first
 
 datatable(setNames(limited_popularity_scaling, c("ID", "Title", "Scaled Number of Votes")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 8: Movie Titles With Scaled Votes"
+  caption = "Table 7: Movie Titles With Scaled Votes"
 ) |>
   formatRound(columns = "Scaled Number of Votes", digits = 2)
 ```
@@ -552,11 +570,17 @@ TITLE_RATINGS_MOVIES <- TITLE_RATINGS |>
 #| code-fold: true
 top10_TITLE_RATINGS_MOVIES <- TITLE_RATINGS_MOVIES[1:10, ] # limiting output
 
-datatable(setNames(top10_TITLE_RATINGS_MOVIES, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release  Year")),
-  options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 9: Top 10 Movies With Success Score"
-) |>
-  formatRound(columns = "Success Score", digits = 2)
+treemap(
+  top10_TITLE_RATINGS_MOVIES,
+  index = "primaryTitle.x",    
+  vSize = "success_score",     
+  vColor = "primaryTitle.x",   
+  type = "index",              
+  title = "Top 10 Movies by Success Score",
+  fontsize.labels = 10,        
+  fontsize.title = 14,
+  draw.legend = FALSE
+)
 ```
 
 ------------------------------------------------------------------------
@@ -572,7 +596,7 @@ ten_bad_movies <- bad_movies[1:10, ]
 
 datatable(setNames(ten_bad_movies, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release  Year")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 10: Bad Movies"
+  caption = "Table 8: Bad Movies"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
@@ -601,7 +625,7 @@ nolan_projects <- NAME_BASICS |>
 
 datatable(setNames(nolan_projects, c("ID", "Title", "Success Score")),
   options = list(pageLength = 11, autoWidth = TRUE),
-  caption = "Table 11: Christopher Nolan Projects"
+  caption = "Table 9: Christopher Nolan Projects"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
@@ -623,7 +647,7 @@ oscar_winners <- TITLE_RATINGS_MOVIES |>
 
 datatable(setNames(oscar_winners, c("ID", "Title", "Success Score", "Average IMDb Rating", "Number of Voters", "Release Year")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 12: Last 5 Oscar Winners"
+  caption = "Table 10: Last 5 Oscar Winners"
 ) |>
   formatRound(columns = "Success Score", digits = 2)
 ```
@@ -683,7 +707,7 @@ ggplot(decade_success, aes(x = factor(decade), y = total_movies, fill = genres))
     title = "Top Genre per Decade",
     x = "Decade",
     y = "Number of Successful Movies",
-    caption = "Figure 3",
+    caption = "Figure 4",
     fill = "Genres"
   ) +
   theme_minimal() + # Clean minimal theme
@@ -722,10 +746,10 @@ interactive_decade_success <- ggplot(decade_success_top10, aes(x = decade, y = t
     x = "Decade",
     y = "Number of Successful Movies",
     color = "Genres",
-    caption = "Figure 4"
+    caption = "Figure 5"
   ) +
   scale_x_continuous(breaks = seq(min(decade_success_top10$decade), max(decade_success_top10$decade), by = 10)) + # Set breaks every 10 years
-  theme_minimal() + 
+  theme_minimal() + # Use a clean theme
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     legend.position = "bottom"
@@ -736,74 +760,53 @@ ggplotly(interactive_decade_success)
 
 ------------------------------------------------------------------------
 
-3.  There is an ongoing trend here, the genre with most successes since 2010 is once again **dramas**.
+3.  There is an ongoing trend here, the genre with most successes since 2010 is once again **dramas**. Taking a look at how many movies in each genre was produced since 2010 can help give context as well. There is definitely an impact by the sheer number of drama movies produced that help it have the highest success rate.
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true
+# count number of successful projects since 2010 by genre
 successes_since_2010 <- movie_genre_success |>
   filter(
     success_score >= 43.6,
     decade >= 2010
   ) |>
   group_by(genres) |>
-  summarize(total_movies = n()) |>
+  summarize(total_movies = n(), .groups = "drop") |>
   arrange(desc(total_movies))
 
-colnames(successes_since_2010) <- c("Genre", "Total Successful Movies")
-
-datatable(successes_since_2010,
-  options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 13: Number of Successful Movies by Genre Since 2010"
-)
-```
-
-Taking a look at how many movies in each genre was produced since 2010 can help give context as well. There is definitely an impact by the sheer number of drama movies produced that help it have the highest success rate.
-
-```{R, message = FALSE, warning = FALSE}
-#| code-fold: true
 # count how many movies were made per genre since 2010
 movie_genres_produced <- movie_genre_success |>
   filter(decade >= 2010) |>
   group_by(genres) |>
-  summarize(total_movies_produced = n()) |>
+  summarize(total_movies_produced = n(), .groups = "drop") |>
   arrange(desc(total_movies_produced))
 
-# rename columns for data table display
-colnames(movie_genres_produced) <- c("Genre", "Total Movies Produced")
-
-datatable(movie_genres_produced,
-  options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 14: Number of Movies Produced by Genre Since 2010"
-)
-```
-
-```{R, message = FALSE, warning = FALSE}
-#| code-fold: true  
-genre_distribution_2010 <- left_join(successes_since_2010, movie_genres_produced, by = "Genre") |>
-  mutate(`Unsuccessful Movies` = `Total Movies Produced` - `Total Successful Movies`) |>
-  arrange(desc(`Total Movies Produced`)) |>
+# combine data
+genre_distribution_2010 <- left_join(successes_since_2010, movie_genres_produced, by = "genres") |>
+  mutate(`Unsuccessful Movies` = total_movies_produced - total_movies) |>
+  arrange(desc(total_movies_produced)) |>
   slice_head(n = 10)
 
-# Pivot the data for long format
+# pivot the data for long format
 genre_distribution_2010 <- genre_distribution_2010 |>
-  pivot_longer(cols = c(`Unsuccessful Movies`, `Total Successful Movies`),
+  pivot_longer(cols = c(`Unsuccessful Movies`, total_movies),
                names_to = "Type",
                values_to = "Count") |>
-  mutate(Type = ifelse(Type == "Total Successful Movies", "Successful Movies", Type))
+  mutate(Type = ifelse(Type == "total_movies", "Successful Movies", Type))
 
-# Plot the stacked bar chart
-ggplot(genre_distribution_2010, aes(x = reorder(Genre, -`Total Movies Produced`), y = Count, fill = Type)) +
-  geom_bar(stat = "identity") +
+# create a dumbbell plot
+ggplot(genre_distribution_2010, aes(x = Count, y = reorder(genres, Count), group = Type)) +
+  geom_segment(aes(xend = 0, yend = reorder(genres, Count)), color = "grey", size = 1) +  # Draw lines to x = 0
+  geom_point(aes(color = Type), size = 3) +  # Points for each type
   labs(
-    title = "Movies Produced by Genre Since 2010",
-    x = "Genre",
-    y = "Number of Movies",
-    caption = "Figure 5",
-    fill = "Movie Status"
+    title = "Distribution of Movie Success by Genre Since 2010",
+    x = "Number of Movies",
+    y = "Genre",
+    caption = "Figure 6"
   ) +
+  scale_color_manual(values = c("Successful Movies" = "blue", "Unsuccessful Movies" = "red")) +
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
     legend.position = "bottom"
   )
 ```
@@ -826,7 +829,7 @@ top_10 <- TITLE_RATINGS_MOVIES |>
 
 datatable(setNames(top_10, c("Title", "Genre(s)")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 15: Top 10 Successful Movies"
+  caption = "Table 11: Top 10 Successful Movies"
 )
 ```
 
@@ -857,7 +860,7 @@ ggplot(murphy_nolan_projects, aes(x = reorder(primaryTitle.x, success_score), y 
     title = "Success Scores of Murphy and Nolan Projects",
     x = "Project Title",
     y = "Success Score",
-    caption = "Figure 6"
+    caption = "Figure 7"
   ) +
   theme_minimal()
 ```
@@ -880,7 +883,7 @@ mescal <- mescal |>
 
 datatable(setNames(mescal, c("Project Title", "Genre(s)")),
   options = list(pageLength = 10, autoWidth = TRUE),
-  caption = "Table 16: Paul Mescal Known Works"
+  caption = "Table 12: Paul Mescal Known Works"
 )
 ```
 
@@ -908,7 +911,7 @@ metropolis <- TITLE_BASICS |>
   select(primaryTitle, startYear, genres, averageRating, numVotes)
 
 datatable(setNames(metropolis, c("Project Title", "Release Year", "Genre(s)", "Average IMDb Rating", "Number of Votes")),
-  caption = "Table 17: Metropolis"
+  caption = "Table 13: Metropolis"
 )
 ```
 
@@ -924,7 +927,7 @@ metropolis_personnel <- TITLE_PRINCIPALS |>
   filter(primaryName == "Fritz Lang" | primaryName == "Thea von Harbou" | primaryName == "Brigitte Helm" | primaryName == "Alfred Abel" | primaryName == "Gustav Fröhlich")
 
 datatable(setNames(metropolis_personnel, c("Name", "Birth Year", "Death Year")),
-  caption = "Table 18: Metropolis Key Personnel"
+  caption = "Table 14: Metropolis Key Personnel"
 )
 ```
 
@@ -933,3 +936,5 @@ datatable(setNames(metropolis_personnel, c("Name", "Birth Year", "Death Year")),
 Dramas have been the bestselling genre in the movie industry in the last century. Between the 1980s to the 2010s, the number of successful drama movies has increased by 394%. Part of the success comes from intertwining the drama genre with other genres to create a more profound story. Among the top ten successful movies, 90% are dramas. Taking a deeper look, 70% of the top ten successful movies blend drama with another genre type. Dramas captivate an audience using emotions and relatability. Tying in another genre adds another layer of complexity that enhances the viewing experience.
 
 All of Christopher Nolan’s directorial works have been well received. 58% of the movies Nolan directed included drama as a genre. Cillian Murphy has been a frequent collaborator of Nolan. All their films together have been hits, their most recent work in Oppenheimer won an Oscar award. Recently, Paul Mescal has garnered attention for his work in the drama genre but has yet to reach stardom. Imagine bringing the three individuals together for a drama project. From Christopher Nolan, the visionary mind behind Inception; and from Cillian Murphy, beloved star of Oppenheimer; and from Paul Mescal, television icon of TV dramas, comes the timeless tail of Metropolis, a story of social inequality, dystopian society, and the effects of industrialization coming soon to a theater near you. Metropolis is primed for a remake, with the star power behind the project, a box office hit is guaranteed.
+
+![Figure 8: Promotional Metropolis Remake Poster, generated by ChatGPT](mp02remakeposter.png)
