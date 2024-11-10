@@ -9,6 +9,7 @@ title: "Welcome To My STA9750 Portfolio"
 
 [Mini Project #02: The Business of Show Business](https://cliu98.github.io/STA9750-2024-FALL/mp02.html)
 
+[Mini Project #03: Do Proportional Electoral College Allocations Yield a More Representative Presidency?](https://cliu98.github.io/STA9750-2024-FALL/mp03.html)
 
 ## About Me
 ### **Chris Liu**
