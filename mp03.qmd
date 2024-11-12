@@ -430,7 +430,78 @@ print(combined_map)
 
 ------------------------------------------------------------------------
 
-animated map
+Taking it a step further, we can see how the election results changed over the years in each states with an animated plot.
+
+```{r, echo=FALSE}
+save_directory <- "~/STA9750-2024-FALL/docs" # save directory for the animated gif file
+if (!dir.exists(save_directory)) {
+  dir.create(save_directory)
+}
+```
+
+```{R, echo = TRUE, message = FALSE, warning = FALSE}
+#| code-fold: true
+
+# Task 6: Advanced Choropleth Visualization of Electoral College Results
+# Modify your previous code to make an animated version showing election results over time.
+
+# write a function that gets the presidential election winners in each desired election year
+
+election_years <- c(1976, 1980, 1984, 1988, 1992, 1996, 2000, 2004, 2008, 2012, 2016, 2020) # election years in the data
+
+# majority of the code is the same as above used to find the winner in 2000, but this time including the year
+get_winner_election_year <- function(input_year) {
+  presidential_vote_count |>
+    filter(year == input_year) |> # Filter for the specific year
+    group_by(state, party_simplified) |>
+    summarize(total_votes = sum(candidatevotes), .groups = "drop") |>
+    group_by(state) |>
+    slice_max(total_votes, n = 1) |>
+    ungroup() |>
+    select(state, party_simplified) |>
+    rename(winning_party = party_simplified) |>
+    mutate(year = input_year) # add year to the table
+}
+
+# bind the results into one table for time frame animation
+election_winner_by_year <- bind_rows(lapply(election_years, get_winner_election_year)) # lapply() will take the arguments in election_years and input it into the get_winner_election_year function
+
+# unzip shape file for states
+shapefile_states <- read_shp_from_zip("tl_2018_us_state.zip")
+
+# join the US states shapefile to the list of election winners
+
+shapefile_states <- shapefile_states|>
+  mutate(NAME = toupper(trimws(NAME))) |> # need to match the characters from both tables to join correctly
+  left_join(election_winner_by_year,
+    join_by(NAME == state),
+    relationship = "many-to-many"
+  ) |>
+  filter(!is.na(year))
+
+# animated plot
+animate_election <- ggplot(shapefile_states,
+  aes(
+    geometry = geometry,
+    fill = winning_party
+  ),
+  color = "black"
+) +
+  geom_sf() +
+  scale_fill_manual(values = c("DEMOCRAT" = "skyblue3", "REPUBLICAN" = "firebrick1")) +
+  theme_minimal() +
+  labs(
+    title = "Presidential Election State Results {closest_state}",
+    subtitle = "Choropleth Map of U.S. States",
+    fill = "Winning Party"
+  ) +
+  theme(legend.position = "bottom") +
+  transition_states(year, transition_length = 0, state_length = 1) +
+  coord_sf(xlim = c(-175, -60), expand = FALSE)
+
+animate(animate_election, renderer = gifski_renderer(file = paste0(save_directory, "/election_results_animation.gif"))) # save as a GIF
+
+```
 
 ------------------------------------------------------------------------
 
@@ -622,10 +693,10 @@ datatable(setNames(national_proportional, c("Year", "Winning Candidate", "Electo
 
 To do so, you should first determine which allocation scheme you consider “fairest”. You should then see which schemes give different results, if they ever do. To make your fact check more compelling, select one election where the ECV scheme had the largest impact–if one exists–and explain how the results would have been different under a different ECV scheme.
 
-Each electoral college vote allocation scheme has its own pros and drawbacks. I believe that the *national proportional* allocation scheme is the "fairest" strategy out of all schemes. It is representative of the entire nation's voting populations interests. The president is the governing entity of the entire nation, the national proportional scheme represents the entire nation's interests as a whole. The population of the United States is not distributed evenly across all the states, thus this scheme is fair since it accounts for everyone's vote regardless of where they reside.  
+Each electoral college vote allocation scheme has its own pros and drawbacks. I believe that the *national proportional* allocation scheme is the "fairest" strategy out of all schemes. It is representative of the entire nation's voting populations interests. The president is the governing entity of the entire nation, the national proportional scheme represents the entire nation's interests as a whole. The population of the United States is not distributed evenly across all the states, thus this scheme is fair since it accounts for everyone's vote regardless of where they reside.
 
-The *state-wide proportional* scheme is the next "fairest" allocation system that can be implemented. It is similar to the national-proportional in nature but it takes a step down and looks at the interests of the voters by state instead. Since different opinions can exist throughout a state, this allocates a fairer distribution of votes. The only drawback is that the representation is not on a national level, but on a state by state level. There can be a slight skew in favoritism since each state has a different amount of electoral votes available.  
+The *state-wide proportional* scheme is the next "fairest" allocation system that can be implemented. It is similar to the national-proportional in nature but it takes a step down and looks at the interests of the voters by state instead. Since different opinions can exist throughout a state, this allocates a fairer distribution of votes. The only drawback is that the representation is not on a national level, but on a state by state level. There can be a slight skew in favoritism since each state has a different amount of electoral votes available.
 
-In my opinion, the *state-wide winner-take-all* and *district-wide winner-take-all* are the least "fair" allocation systems. They do not offer a true representation of the nation's interests, but focus on a subset of opinions that may not be commonly held by the entire nation. The *state-wide winner-take-all* system suffers from representing the entire sentiment of the voters in a state. A small majority win can tip the balance to one party, whilst ignoring the remaining voter's opinions in the state. The *district-wide winner-take-all* system examines the opinions of voter's on a district level. Although this may seem fair since each district has a voice, the distribution can be skewed since the districts don't represent the population size located within. Political tactics like gerrymandering can greatly effect the voices of voters and not reflect the overall voter preferences.   
+In my opinion, the *state-wide winner-take-all* and *district-wide winner-take-all* are the least "fair" allocation systems. They do not offer a true representation of the nation's interests, but focus on a subset of opinions that may not be commonly held by the entire nation. The *state-wide winner-take-all* system suffers from representing the entire sentiment of the voters in a state. A small majority win can tip the balance to one party, whilst ignoring the remaining voter's opinions in the state. The *district-wide winner-take-all* system examines the opinions of voter's on a district level. Although this may seem fair since each district has a voice, the distribution can be skewed since the districts don't represent the population size located within. Political tactics like gerrymandering can greatly effect the voices of voters and not reflect the overall voter preferences.
 
-The 2000 presidential election is an example of where the electoral college vote scheme had the greatest impact on the results. The *national proportional* scheme solely determined that Al Gore would have won the election. Every other scheme resulted in George W. Bush winning the election, including the historical one. 
+The 2000 presidential election is an example of where the electoral college vote scheme had the greatest impact on the results. The *national proportional* scheme solely determined that Al Gore would have won the election. Every other scheme resulted in George W. Bush winning the election, including the historical one.
