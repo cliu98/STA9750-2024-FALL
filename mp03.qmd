@@ -325,6 +325,7 @@ Earlier we downloaded zip files for the US congressional districts. In order to 
 ```{R, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
 #| code-fold: true
 
+# Task 4: Automate Zip File Extraction
 # the following code writes a function that can read any zip file and extract the shapefile within
 read_shp_from_zip <- function(zip_file) {
   temp_dir <- tempdir() # Create a temporary directory
@@ -514,6 +515,7 @@ The first task at hand is to identify the number of electoral votes each state h
 ```{R, echo = TRUE, message = FALSE, warning = FALSE}
 #| code-fold: true
 
+# Task 7: Evaluating Fairness of ECV Allocation Schemes
 # find number of electoral votes each state has each year
 electoral_votes_by_state <- house_rep_vote_count |>
   group_by(year, state) |>
