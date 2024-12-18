@@ -18,11 +18,10 @@ This analysis will specifically look into the relationship between the geographi
 ------------------------------------------------------------------------
 
 ## R Packages
-
-The following R packages will be used.
-
 ```{R, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
 #| code-fold: true
+
+#The following R packages will be used
 
 library(tidyr)
 library(dplyr)
@@ -53,7 +52,7 @@ medal_tally <- read_csv("Olympic_Medal_Tally_History.csv")
 
 ```
 
-The next set of data are coordinate systems for each country in the world. These are readily available from [Google Developers](https://developers.google.com/public-data/docs/canonical/countries_csv). This data can be web scraped and imported into the work environment directly.
+The next set are coordinate systems for each country in the world. These are readily available from [Google Developers](https://developers.google.com/public-data/docs/canonical/countries_csv). This data can be web scraped and imported into the work environment directly.
 
 Once the country coordinate data has been loaded, we inspect any issues related to joining it with our Olympic Games data. An `anti-join` is used to generate a list of participants in Olympic history that don't appear in the country coordinate data. There are a multitude of reasons why some participants may not show up in the coordinate data:
 
@@ -376,7 +375,7 @@ datatable(summer_medal_count_tabular, caption = "Summer Olympic Medal Distributi
 
 <p> </p>
 
-If we compare the top 10 performing countries in each set, we have a few overlapping nations. We see that Germany, Russia, USA, and Italy intersect in each list. At one point or another in history, these countries were considered superpowers of the world. That's something we might want to keep in mind.
+Comparing the top 10 performing countries in each set, we have a few overlapping nations. We see that Germany, Russia, USA, and Italy intersect in each list. At one point or another in history, these countries were considered superpowers of the world. That's something we might want to keep in mind.
 
 Furthermore, let's inspect the historical performance of the top 5 countries in each list to get a better understanding if there has been consistency throughout the years.
 
@@ -666,7 +665,7 @@ ggplot(latitude_medals_summer |> na.omit(), aes(x = latitude, y = total_medals_t
   )
 ```
 
-The scatter plot now exhibits a reasonable linear relationship. We can draw some conclusions based off this transformation. We can confirm there is a non-linear relationship between latitude and medals won at the Summer Olympics. This suggests that factors other than latitude (such as socio-economic factors) may be influencing success, and that their respective relationships may not be straight forward either.
+The scatter plot now exhibits a reasonable linear relationship. Drawing conclusions based off this transformation; we can confirm there is a non-linear relationship between latitude and medals won at the Summer Olympics. This suggests that factors other than latitude (such as socio-economic factors) may be influencing success, and that their respective relationships may not be straight forward either.
 
 ### Permutation Testing
 
@@ -776,7 +775,7 @@ cat("The p-value from the permutation test conducted on the southern hemisphere 
 
 This time I get two different results from each test.
 
--   In the northern hemisphere: the result is statistically significant. Countries at higher latitudes in the northern hemisphere are associated with winning more medals. This could reflect factors like greater representation, wealthier economies, or better sports infrastructure.
+-   In the northern hemisphere: the result is statistically significant. Countries at higher latitudes are associated with winning more medals. This could reflect factors like greater representation, wealthier economies, or better sports infrastructure.
 -   In the southern hemisphere: there is no evidence of a relationship between the two variables. The correlation is small and likely due to random chance.
 
 ## Climate Region Analysis
@@ -921,6 +920,8 @@ In the Winter Olympics, the p-value confirms that regions have a significant eff
 The major takeaway from this analysis is that a significant relationship exists between a country's location and success at the Olympics, especially in the northern hemisphere. However, we need to consider that the majority of the world's landmass and population is situated in the northern hemisphere. We can attribute location as a key factor that may have influenced other determinants of success, such as economic development, access to resources, and sports culture.
 
 Additionally, climate zones play a crucial role in shaping the types of sports countries prioritize and invest in, further impacting their medal counts. Countries in more temperate climates may have an advantage in both seasonal sports, while those in extreme climates might specialize differently.
+  
+The majority of the medals are held by a smaller group of countries, hinting that they may have better access to resources and infrastructure. Keep in mind that the majority of the participating nations are located in the northern hemisphere, which may be a key bias in this study. The ultimate limitation is that locations are predetermined and each country is subject to their own surroundings and cannot do much in altering what they are given by nature.   
 
 # Future Potential Work
 
