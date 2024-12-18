@@ -1,11 +1,6 @@
 ---
 title: "Course Project Individual Report: Does a Country’s Geographic Characteristics Affect Performance at the Olympics?"
 author: "Chris Liu"
-execute:
-  echo: false
-format: 
-  html:
-    runtime: shiny
 ---
 
 ![](olympic_graphic.jpg)
@@ -916,76 +911,8 @@ summary(winter_anova)
 
 In the Winter Olympics, the p-value confirms that regions have a significant effect on medal counts.
 
-### 
-
-To view customized results, utilize this interactive model:
-
-```{R shiny app}
-#| code-fold: true
-
-climate_interaction <- medal_tally |>
-  select(year, country, total, edition) |>
-  left_join(climate_zones, by = "country") |>
-  mutate(edition = case_when( # rename for Shiny UI
-    grepl("Summer", edition, ignore.case = TRUE) ~ "Summer",
-    grepl("Winter", edition, ignore.case = TRUE) ~ "Winter",
-    TRUE ~ edition
-  ))
-
-# define UI
-ui <- fluidPage(
-  titlePanel("Interactive Olympic Results by Climate Region"),
-  
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput("yearRange", "Select Year Range:",
-                  min = min(climate_interaction$year),
-                  max = max(climate_interaction$year),
-                  value = c(min(climate_interaction$year), max(climate_interaction$year)),
-                  step = 1),
-      pickerInput("selectedRegions", "Select Climate Regions:", 
-                  choices = na.omit(unique(climate_interaction$region)),  # Remove NA
-                  selected = unique(climate_interaction$region),
-                  multiple = TRUE,
-                  options = list(`actions-box` = TRUE)),
-      pickerInput("selectedEditions", "Select Editions:", 
-                  choices = unique(climate_interaction$edition),
-                  selected = unique(climate_interaction$edition),
-                  multiple = TRUE,
-                  options = list(`actions-box` = TRUE))
-    ),
-    
-    mainPanel(
-      plotOutput("barPlot")
-    )
-  )
-)
-
-# define Server Logic
-server <- function(input, output) {
-  
-  filteredData <- reactive({
-    climate_interaction |>
-      filter(year >= input$yearRange[1],
-             year <= input$yearRange[2],
-             region %in% input$selectedRegions,
-             edition %in% input$selectedEditions)
-  })
-  
-  output$barPlot <- renderPlot({
-    ggplot(filteredData(), aes(x = region, y = total, fill = region)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(title = "Total Medals by Climate Region",
-           x = "Climate Region",
-           y = "Total Medals") +
-      theme_minimal()
-  })
-}
-
-# run the application 
-shinyApp(ui = ui, server = server)
-
-```
+### Climate Region Widget
+[![Click on the image for interaction!](climate_app_screenshot.png)](https://cliu98.shinyapps.io/climate_app/)
 
 # Conclusion
 
