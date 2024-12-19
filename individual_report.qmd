@@ -928,3 +928,6 @@ The majority of the medals are held by a smaller group of countries, hinting tha
 ------------------------------------------------------------------------
 
 If I were to continue this analysis, I would like to explore the historical connections between geography, resource availability, and national power, examining how these factors have shaped the rise of nations and their resulting global success in the context of the Olympics. By analyzing key case studies of countries that leveraged their geographical advantages and natural resources to achieve economic and political prominence, this study aims to illuminate the patterns underlying their Olympic achievements.
+
+# General Findings
+A general report about the statistical findings about Olympic advantages can be found [here.](https://cliu98.github.io/STA9750-2024-FALL/olympic-advantage.html)

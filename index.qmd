@@ -13,6 +13,10 @@ title: "Welcome To My STA9750 Portfolio"
 
 [Mini Project #04: Monte Carlo-Informed Selection of CUNY Retirement Plans](https://cliu98.github.io/STA9750-2024-FALL/mp04.html)
 
+[Course Project: Does a Country’s Geographic Characteristics Affect Performance at the Olympics?](https://cliu98.github.io/STA9750-2024-FALL/individual_report.html)
+
+[Course Project: General Group Report Findings](https://cliu98.github.io/STA9750-2024-FALL/olympic-advantage.html)
+
 ## About Me
 ### **Chris Liu**
 
