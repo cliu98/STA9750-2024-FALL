@@ -1,21 +1,21 @@
 ---
-title: "Welcome To My STA9750 Portfolio"
+title: "Welcome To My Statistics & Data Analysis Portfolio"
 ---
 
 ## Portfolio Projects
 
-[Mini Project #01: Fiscal Characteristics of Major US Public Transit Systems](https://cliu98.github.io/STA9750-2024-FALL/mp01.html)  
+[Fiscal Characteristics of Major US Public Transit Systems](https://cliu98.github.io/STA9750-2024-FALL/mp01.html)  
 
 
-[Mini Project #02: The Business of Show Business](https://cliu98.github.io/STA9750-2024-FALL/mp02.html)
+[The Business of Show Business](https://cliu98.github.io/STA9750-2024-FALL/mp02.html)
 
-[Mini Project #03: Do Proportional Electoral College Allocations Yield a More Representative Presidency?](https://cliu98.github.io/STA9750-2024-FALL/mp03.html)
+[Do Proportional Electoral College Allocations Yield a More Representative Presidency?](https://cliu98.github.io/STA9750-2024-FALL/mp03.html)
 
-[Mini Project #04: Monte Carlo-Informed Selection of CUNY Retirement Plans](https://cliu98.github.io/STA9750-2024-FALL/mp04.html)
+[Monte Carlo-Informed Selection of CUNY Retirement Plans](https://cliu98.github.io/STA9750-2024-FALL/mp04.html)
 
-[Course Project: Does a Country’s Geographic Characteristics Affect Performance at the Olympics?](https://cliu98.github.io/STA9750-2024-FALL/individual_report.html)
+[Does a Country’s Geographic Characteristics Affect Performance at the Olympics?](https://cliu98.github.io/STA9750-2024-FALL/individual_report.html)
 
-[Course Project: General Group Report Findings](https://cliu98.github.io/STA9750-2024-FALL/olympic-advantage.html)
+[Olympic Success Analysis: General Group Report Findings](https://cliu98.github.io/STA9750-2024-FALL/olympic-advantage.html)
 
 ## About Me
 ### **Chris Liu**
