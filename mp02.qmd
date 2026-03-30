@@ -23,7 +23,6 @@ if (!require("stringr")) install.packages("stringr")
 if (!require("DT")) install.packages("DT")
 if (!require("ggplot2")) install.packages("ggplot2")
 if (!require("gganimate")) install.packages("gganimate")
-if (!require("gifski")) install.packages("gifski")
 if (!require("plotly")) install.packages("plotly")
 if (!require("treemap")) install.packages("treemap")
 ```
@@ -38,7 +37,6 @@ library(stringr)
 library(DT)
 library(ggplot2)
 library(gganimate)
-library(gifski)
 library(plotly)
 library(treemap)
 
@@ -493,8 +491,7 @@ I will employ a success score for each movie based on IMDb ratings and number of
 
 Based on the Bayesian average, I will define a new metric called `weighted_rating` for each movie title as a new rating measurement. The metric will be defined as:
 
-$$ weighted\_rating = [(averageRating * numVotes) / (numVotes + avg\_num\_voters)] $$ 
-$$ + [avg\_num\_voters/(numVotes + avg\_num\_voters)]*avg\_movie\_rating $$
+$$ weighted\_rating = [(averageRating * numVotes) / (numVotes + avg\_num\_voters)] + [avg\_num\_voters/(numVotes + avg\_num\_voters)]*avg\_movie\_rating $$
 
 As it stands, the variables `avg_num_voters` and `avg_movie_rating` are undefined in our data, but will be defined momentarily. The variable names are representative of what they define, we will be sampling the average number of voters and the average movie rating across all movies in our data. Having these metrics will give us a baseline to work with when quantifying the success of a movie.
 
@@ -594,9 +591,8 @@ datatable(setNames(limited_popularity_scaling, c("ID", "Title", "Scaled Number o
 ) |>
   formatRound(columns = "Scaled Number of Votes", digits = 2)
 ```
-  
-  
-Tying it all together now, I will define a success score by multiplying the **weighted rating** and the **scaled popularity factor**. I've defined the new table as `TITLE_RATINGS_MOVIES`, and will use my new `success_score` metric for further analysis.
+
+Tying it all together now, I will define a success score by multiplying the weighted rating and the scaled popularity factor. I've defined the new table as `TITLE_RATINGS_MOVIES`, and will use my new `success_score` metric for further analysis.
 
 ```{R, message = FALSE, warning = FALSE}
 #| code-fold: true

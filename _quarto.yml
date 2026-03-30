@@ -14,4 +14,3 @@ format:
   html:
     theme: lux
     toc: false
-    runtime: shiny  # Add this line to enable shiny runtime
